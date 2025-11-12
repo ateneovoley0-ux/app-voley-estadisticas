@@ -146,6 +146,20 @@
             cursor: not-allowed;
         }
         
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9em;
+            margin: 5px;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f56565 0%, #c53030 100%);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        }
+        
         .jugadores-list, .partidos-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -157,9 +171,9 @@
             background: #f8f9fa;
             border-radius: 12px;
             padding: 20px;
-            cursor: pointer;
             transition: all 0.3s;
             border: 2px solid transparent;
+            position: relative;
         }
         
         .jugador-card:hover, .partido-card:hover {
@@ -171,6 +185,7 @@
         .jugador-card h3, .partido-card h3 {
             color: #667eea;
             margin-bottom: 10px;
+            cursor: pointer;
         }
         
         .jugador-info, .partido-info {
@@ -180,6 +195,12 @@
         
         .jugador-info p, .partido-info p {
             margin: 5px 0;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
         }
         
         .modal {
@@ -335,8 +356,10 @@
         <div class="content">
             <!-- TAB JUGADORES -->
             <div id="jugadores" class="tab-content active">
-                <h2>Agregar Jugador</h2>
-                <form id="formJugador" onsubmit="agregarJugador(event)">
+                <h2 id="tituloFormJugador">Agregar Jugador</h2>
+                <form id="formJugador" onsubmit="guardarJugador(event)">
+                    <input type="hidden" id="jugadorIdEdit" value="">
+                    
                     <div class="form-group">
                         <label>Nombre y Apellido *</label>
                         <input type="text" id="nombreJugador" required>
@@ -378,7 +401,8 @@
                         </select>
                     </div>
                     
-                    <button type="submit" class="btn" id="btnAgregarJugador">Agregar Jugador</button>
+                    <button type="submit" class="btn" id="btnGuardarJugador">Agregar Jugador</button>
+                    <button type="button" class="btn btn-danger" id="btnCancelarEdit" onclick="cancelarEdicion()" style="display:none;">Cancelar</button>
                 </form>
                 
                 <div id="jugadoresList" class="jugadores-list">
@@ -547,8 +571,8 @@
         let jugadores = [];
         let partidos = [];
         let estadisticas = [];
+        let editandoJugador = false;
         
-        // Cargar datos al iniciar
         window.addEventListener('load', async () => {
             await cargarTodosLosDatos();
         });
@@ -564,7 +588,6 @@
             cargarPartidosSelect();
         }
         
-        // FUNCIONES DE API
         async function cargarJugadores() {
             try {
                 const response = await fetch(`${API_URL}?action=getJugadores`);
@@ -595,7 +618,6 @@
             }
         }
         
-        // FUNCIONES DE TABS
         function switchTab(tabName) {
             const tabs = document.querySelectorAll('.tab');
             const contents = document.querySelectorAll('.tab-content');
@@ -611,14 +633,14 @@
             }
         }
         
-        // JUGADORES
-        async function agregarJugador(event) {
+        async function guardarJugador(event) {
             event.preventDefault();
             
-            const btn = document.getElementById('btnAgregarJugador');
+            const btn = document.getElementById('btnGuardarJugador');
             btn.disabled = true;
             btn.textContent = 'Guardando...';
             
+            const jugadorId = document.getElementById('jugadorIdEdit').value;
             const nombre = document.getElementById('nombreJugador').value;
             const rama = document.getElementById('ramaJugador').value;
             const categoriasSelect = document.getElementById('categoriaJugador');
@@ -628,23 +650,86 @@
             const posiciones = Array.from(posicionesSelect.selectedOptions).map(opt => opt.value).join(',');
             
             try {
-                const url = `${API_URL}?action=addJugador&nombre=${encodeURIComponent(nombre)}&rama=${encodeURIComponent(rama)}&categorias=${encodeURIComponent(categorias)}&dorsal=${encodeURIComponent(dorsal)}&posiciones=${encodeURIComponent(posiciones)}`;
+                const action = jugadorId ? 'updateJugador' : 'addJugador';
+                const url = `${API_URL}?action=${action}&nombre=${encodeURIComponent(nombre)}&rama=${encodeURIComponent(rama)}&categorias=${encodeURIComponent(categorias)}&dorsal=${encodeURIComponent(dorsal)}&posiciones=${encodeURIComponent(posiciones)}${jugadorId ? '&id=' + jugadorId : ''}`;
                 const response = await fetch(url);
                 const result = await response.json();
                 
                 if (result.success) {
                     document.getElementById('formJugador').reset();
+                    document.getElementById('jugadorIdEdit').value = '';
+                    document.getElementById('tituloFormJugador').textContent = 'Agregar Jugador';
+                    document.getElementById('btnCancelarEdit').style.display = 'none';
+                    editandoJugador = false;
+                    
                     await cargarJugadores();
                     renderJugadores();
-                    mostrarAlerta('¡Jugador agregado correctamente!', 'success');
+                    mostrarAlerta(jugadorId ? '¡Jugador actualizado correctamente!' : '¡Jugador agregado correctamente!', 'success');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                mostrarAlerta('Error al agregar jugador', 'error');
+                mostrarAlerta('Error al guardar jugador', 'error');
             }
             
             btn.disabled = false;
-            btn.textContent = 'Agregar Jugador';
+            btn.textContent = jugadorId ? 'Actualizar Jugador' : 'Agregar Jugador';
+        }
+        
+        function editarJugador(jugadorId) {
+            const jugador = jugadores.find(j => j.id == jugadorId);
+            if (!jugador) return;
+            
+            document.getElementById('jugadorIdEdit').value = jugador.id;
+            document.getElementById('nombreJugador').value = jugador.nombre;
+            document.getElementById('ramaJugador').value = jugador.rama;
+            document.getElementById('dorsalJugador').value = jugador.dorsal;
+            
+            const categoriasSelect = document.getElementById('categoriaJugador');
+            Array.from(categoriasSelect.options).forEach(opt => {
+                opt.selected = jugador.categorias.includes(opt.value);
+            });
+            
+            const posicionesSelect = document.getElementById('posicionJugador');
+            Array.from(posicionesSelect.options).forEach(opt => {
+                opt.selected = jugador.posiciones.includes(opt.value);
+            });
+            
+            document.getElementById('tituloFormJugador').textContent = 'Editar Jugador';
+            document.getElementById('btnGuardarJugador').textContent = 'Actualizar Jugador';
+            document.getElementById('btnCancelarEdit').style.display = 'inline-block';
+            editandoJugador = true;
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function cancelarEdicion() {
+            document.getElementById('formJugador').reset();
+            document.getElementById('jugadorIdEdit').value = '';
+            document.getElementById('tituloFormJugador').textContent = 'Agregar Jugador';
+            document.getElementById('btnGuardarJugador').textContent = 'Agregar Jugador';
+            document.getElementById('btnCancelarEdit').style.display = 'none';
+            editandoJugador = false;
+        }
+        
+        async function eliminarJugador(jugadorId) {
+            if (!confirm('¿Estás seguro de eliminar este jugador? Esta acción no se puede deshacer.')) {
+                return;
+            }
+            
+            try {
+                const url = `${API_URL}?action=deleteJugador&id=${jugadorId}`;
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success) {
+                    await cargarJugadores();
+                    renderJugadores();
+                    mostrarAlerta('¡Jugador eliminado correctamente!', 'success');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta('Error al eliminar jugador', 'error');
+            }
         }
         
         function renderJugadores() {
@@ -659,14 +744,17 @@
             jugadores.forEach(jugador => {
                 const card = document.createElement('div');
                 card.className = 'jugador-card';
-                card.onclick = () => abrirPerfilJugador(jugador.id);
                 
                 card.innerHTML = `
-                    <h3>#${jugador.dorsal} ${jugador.nombre}</h3>
+                    <h3 onclick="abrirPerfilJugador(${jugador.id})">#${jugador.dorsal} ${jugador.nombre}</h3>
                     <div class="jugador-info">
                         <p><strong>Rama:</strong> ${jugador.rama}</p>
                         <p><strong>Categorías:</strong> ${jugador.categorias.join(', ')}</p>
                         <p><strong>Posiciones:</strong> ${jugador.posiciones.join(', ')}</p>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-small btn-warning" onclick="editarJugador(${jugador.id})">✏️ Editar</button>
+                        <button class="btn btn-small btn-danger" onclick="eliminarJugador(${jugador.id})">🗑️ Borrar</button>
                     </div>
                 `;
                 
@@ -919,7 +1007,6 @@
             return total > 0 ? Math.round((fav / total) * 100) : 0;
         }
         
-        // PARTIDOS
         async function crearPartido(event) {
             event.preventDefault();
             
@@ -954,6 +1041,28 @@
             btn.textContent = 'Crear Partido';
         }
         
+        async function eliminarPartido(partidoId) {
+            if (!confirm('¿Estás seguro de eliminar este partido? Esta acción no se puede deshacer.')) {
+                return;
+            }
+            
+            try {
+                const url = `${API_URL}?action=deletePartido&id=${partidoId}`;
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success) {
+                    await cargarPartidos();
+                    renderPartidos();
+                    cargarPartidosSelect();
+                    mostrarAlerta('¡Partido eliminado correctamente!', 'success');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta('Error al eliminar partido', 'error');
+            }
+        }
+        
         function renderPartidos() {
             const container = document.getElementById('partidosList');
             container.innerHTML = '';
@@ -974,6 +1083,9 @@
                         <p><strong>Categoría:</strong> ${partido.categoria}</p>
                         <p><strong>Rama:</strong> ${partido.rama}</p>
                         <p><strong>Tipo:</strong> ${partido.local}</p>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-small btn-danger" onclick="eliminarPartido(${partido.id})">🗑️ Borrar</button>
                     </div>
                 `;
                 
@@ -1016,7 +1128,6 @@
             });
         }
         
-        // ESTADÍSTICAS
         async function guardarEstadisticas(event) {
             event.preventDefault();
             
@@ -1067,7 +1178,6 @@
             btn.textContent = 'Guardar Estadísticas';
         }
         
-        // UTILIDADES
         function cerrarModal() {
             document.getElementById('modalJugador').classList.remove('active');
         }

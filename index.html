@@ -376,6 +376,64 @@
             color: #999;
             font-style: italic;
         }
+        
+        /* Separación entre formulario y listado */
+        .separador {
+            margin: 50px 0 30px 0;
+            border-top: 3px solid #e0e0e0;
+        }
+        
+        /* Estilos para colapsar/expandir */
+        .rama-titulo, .categoria-titulo {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .rama-titulo:hover, .categoria-titulo:hover {
+            opacity: 0.8;
+        }
+        
+        .rama-titulo::after, .categoria-titulo::after {
+            content: '▼';
+            position: absolute;
+            right: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .rama-titulo.collapsed::after, .categoria-titulo.collapsed::after {
+            transform: rotate(-90deg);
+        }
+        
+        .categoria-content, .rama-content {
+            max-height: 5000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .categoria-content.collapsed, .rama-content.collapsed {
+            max-height: 0;
+        }
+        
+        /* Buscador de jugadores */
+        .search-box {
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .search-box input {
+            padding-left: 40px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
@@ -442,6 +500,8 @@
                     <button type="submit" class="btn" id="btnGuardarJugador">Agregar Jugador</button>
                     <button type="button" class="btn btn-danger" id="btnCancelarEdit" onclick="cancelarEdicion()" style="display:none;">Cancelar</button>
                 </form>
+                
+                <div class="separador"></div>
                 
                 <div id="jugadoresList">
                     <div class="loading">
@@ -519,7 +579,11 @@
                     
                     <div class="form-group">
                         <label>Jugador *</label>
-                        <select id="jugadorEstadisticas" required>
+                        <div class="search-box">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="buscarJugador" placeholder="Buscar jugador por nombre o dorsal..." oninput="filtrarJugadores()">
+                        </div>
+                        <select id="jugadorEstadisticas" required size="8">
                             <option value="">Seleccionar jugador...</option>
                         </select>
                     </div>
@@ -822,7 +886,12 @@
                 const ramaTitulo = document.createElement('div');
                 ramaTitulo.className = 'rama-titulo';
                 ramaTitulo.innerHTML = `${rama === 'Masculino' ? '👨' : '👩'} ${rama.toUpperCase()}`;
+                ramaTitulo.onclick = () => toggleRama(rama);
                 ramaDiv.appendChild(ramaTitulo);
+                
+                const ramaContent = document.createElement('div');
+                ramaContent.className = 'rama-content collapsed';
+                ramaContent.id = `rama-${rama}`;
                 
                 // Agrupar jugadores de esta rama por categoría
                 const categorias = ['SUB 14', 'SUB 16', 'SUB 18', 'SUB 21', 'Mayores'];
@@ -840,7 +909,15 @@
                     const categoriaTitulo = document.createElement('div');
                     categoriaTitulo.className = 'categoria-titulo';
                     categoriaTitulo.textContent = categoria;
+                    categoriaTitulo.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleCategoria(rama, categoria);
+                    };
                     categoriaDiv.appendChild(categoriaTitulo);
+                    
+                    const categoriaContent = document.createElement('div');
+                    categoriaContent.className = 'categoria-content collapsed';
+                    categoriaContent.id = `categoria-${rama}-${categoria.replace(' ', '-')}`;
                     
                     const jugadoresList = document.createElement('div');
                     jugadoresList.className = 'jugadores-list';
@@ -864,12 +941,32 @@
                         jugadoresList.appendChild(card);
                     });
                     
-                    categoriaDiv.appendChild(jugadoresList);
-                    ramaDiv.appendChild(categoriaDiv);
+                    categoriaContent.appendChild(jugadoresList);
+                    categoriaDiv.appendChild(categoriaContent);
+                    ramaContent.appendChild(categoriaDiv);
                 });
                 
+                ramaDiv.appendChild(ramaContent);
                 container.appendChild(ramaDiv);
             });
+        }
+        
+        // Funciones para colapsar/expandir
+        function toggleRama(rama) {
+            const ramaContent = document.getElementById(`rama-${rama}`);
+            const ramaTitulo = ramaContent.previousElementSibling;
+            
+            ramaContent.classList.toggle('collapsed');
+            ramaTitulo.classList.toggle('collapsed');
+        }
+        
+        function toggleCategoria(rama, categoria) {
+            const categoriaId = `categoria-${rama}-${categoria.replace(' ', '-')}`;
+            const categoriaContent = document.getElementById(categoriaId);
+            const categoriaTitulo = categoriaContent.previousElementSibling;
+            
+            categoriaContent.classList.toggle('collapsed');
+            categoriaTitulo.classList.toggle('collapsed');
         }
         
         function abrirPerfilJugador(jugadorId) {
@@ -1218,8 +1315,10 @@
         function cargarJugadoresPartido() {
             const partidoId = document.getElementById('partidoEstadisticas').value;
             const select = document.getElementById('jugadorEstadisticas');
+            const buscarInput = document.getElementById('buscarJugador');
             
             select.innerHTML = '<option value="">Seleccionar jugador...</option>';
+            buscarInput.value = '';
             
             if (!partidoId) return;
             
@@ -1232,12 +1331,38 @@
                 j.rama === partido.rama && puedeJugarEnCategoria(j, partido.categoria)
             );
             
+            // Guardar lista completa para filtrado
+            select.dataset.jugadores = JSON.stringify(jugadoresFiltrados);
+            
             jugadoresFiltrados.forEach(jugador => {
                 const option = document.createElement('option');
                 option.value = jugador.id;
                 option.textContent = `#${jugador.dorsal} ${jugador.nombre}`;
                 select.appendChild(option);
             });
+        }
+        
+        function filtrarJugadores() {
+            const buscar = document.getElementById('buscarJugador').value.toLowerCase();
+            const select = document.getElementById('jugadorEstadisticas');
+            
+            if (!select.dataset.jugadores) return;
+            
+            const jugadoresFiltrados = JSON.parse(select.dataset.jugadores);
+            
+            select.innerHTML = '<option value="">Seleccionar jugador...</option>';
+            
+            jugadoresFiltrados
+                .filter(j => 
+                    j.nombre.toLowerCase().includes(buscar) || 
+                    j.dorsal.toString().includes(buscar)
+                )
+                .forEach(jugador => {
+                    const option = document.createElement('option');
+                    option.value = jugador.id;
+                    option.textContent = `#${jugador.dorsal} ${jugador.nombre}`;
+                    select.appendChild(option);
+                });
         }
         
         async function guardarEstadisticas(event) {

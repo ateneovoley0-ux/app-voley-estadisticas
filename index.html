@@ -1,1070 +1,746 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ateneo Voley</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+import React, { useState, useEffect } from 'react';
+import { Camera, TrendingUp, Users, Calendar, BarChart3 } from 'lucide-react';
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend } from 'recharts';
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+const VoleyStatsApp = () => {
+  const [activeTab, setActiveTab] = useState('jugadores');
+  const [jugadores, setJugadores] = useState([]);
+  const [partidos, setPartidos] = useState([]);
+  const [estadisticas, setEstadisticas] = useState([]);
+  const [selectedJugador, setSelectedJugador] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
+  // Cargar datos al iniciar
+  useEffect(() => {
+    loadData();
+  }, []);
 
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const jugadoresData = await window.storage.get('jugadores');
+      const partidosData = await window.storage.get('partidos');
+      const estadisticasData = await window.storage.get('estadisticas');
 
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
+      if (jugadoresData) setJugadores(JSON.parse(jugadoresData.value));
+      if (partidosData) setPartidos(JSON.parse(partidosData.value));
+      if (estadisticasData) setEstadisticas(JSON.parse(estadisticasData.value));
+    } catch (error) {
+      console.log('No hay datos previos, iniciando vacío');
+    }
+    setLoading(false);
+  };
 
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
+  const saveJugadores = async (data) => {
+    await window.storage.set('jugadores', JSON.stringify(data));
+    setJugadores(data);
+  };
 
-        .tabs {
-            display: flex;
-            background: #f8f9fa;
-            border-bottom: 2px solid #dee2e6;
-        }
+  const savePartidos = async (data) => {
+    await window.storage.set('partidos', JSON.stringify(data));
+    setPartidos(data);
+  };
 
-        .tab {
-            flex: 1;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-            border: none;
-            background: transparent;
-            font-size: 1em;
-        }
+  const saveEstadisticas = async (data) => {
+    await window.storage.set('estadisticas', JSON.stringify(data));
+    setEstadisticas(data);
+  };
 
-        .tab:hover {
-            background: #e9ecef;
-        }
+  // Formulario Jugador
+  const [formJugador, setFormJugador] = useState({
+    nombre: '',
+    apellido: '',
+    rama: '',
+    categoria: '',
+    dorsal: '',
+    posiciones: []
+  });
 
-        .tab.active {
-            background: white;
-            color: #667eea;
-            border-bottom: 3px solid #667eea;
-        }
+  const handleAddJugador = async (e) => {
+    e.preventDefault();
+    if (!formJugador.nombre || !formJugador.apellido || !formJugador.rama || 
+        !formJugador.categoria || !formJugador.dorsal || formJugador.posiciones.length === 0) {
+      alert('Por favor completa todos los campos');
+      return;
+    }
 
-        .content {
-            padding: 30px;
-        }
+    const nuevoJugador = {
+      id: Date.now().toString(),
+      ...formJugador,
+      dorsal: parseInt(formJugador.dorsal)
+    };
 
-        .tab-content {
-            display: none;
-        }
+    const nuevosJugadores = [...jugadores, nuevoJugador];
+    await saveJugadores(nuevosJugadores);
+    
+    setFormJugador({
+      nombre: '',
+      apellido: '',
+      rama: '',
+      categoria: '',
+      dorsal: '',
+      posiciones: []
+    });
+  };
 
-        .tab-content.active {
-            display: block;
-        }
+  const handlePosicionChange = (posicion) => {
+    const posiciones = [...formJugador.posiciones];
+    const index = posiciones.indexOf(posicion);
+    
+    if (index > -1) {
+      posiciones.splice(index, 1);
+    } else {
+      posiciones.push(posicion);
+    }
+    
+    setFormJugador({ ...formJugador, posiciones });
+  };
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+  // Formulario Partido
+  const [formPartido, setFormPartido] = useState({
+    rival: '',
+    fecha: '',
+    tipo: '',
+    rama: '',
+    categoria: ''
+  });
 
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
+  const handleAddPartido = async (e) => {
+    e.preventDefault();
+    if (!formPartido.rival || !formPartido.fecha || !formPartido.tipo || 
+        !formPartido.rama || !formPartido.categoria) {
+      alert('Por favor completa todos los campos');
+      return;
+    }
 
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            font-size: 1em;
-            transition: border-color 0.3s;
-        }
+    const nuevoPartido = {
+      id: Date.now().toString(),
+      ...formPartido
+    };
 
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
+    const nuevosPartidos = [...partidos, nuevoPartido];
+    await savePartidos(nuevosPartidos);
+    
+    setFormPartido({
+      rival: '',
+      fecha: '',
+      tipo: '',
+      rama: '',
+      categoria: ''
+    });
+  };
 
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-            width: 100%;
-        }
+  // Formulario Estadísticas
+  const [formStats, setFormStats] = useState({
+    partidoId: '',
+    jugadorId: '',
+    saqueFavorable: 0,
+    saqueFallado: 0,
+    ataqueFavorable: 0,
+    ataqueFallado: 0,
+    bloqueoFavorable: 0,
+    bloqueoFallado: 0,
+    armadoFavorable: 0,
+    armadoFallado: 0,
+    recepcionDoblePositiva: 0,
+    recepcionPositiva: 0,
+    recepcionNegativa: 0,
+    recepcionNegativaJuego: 0
+  });
 
-        .btn:hover {
-            transform: translateY(-2px);
-        }
+  const handleAddStats = async (e) => {
+    e.preventDefault();
+    if (!formStats.partidoId || !formStats.jugadorId) {
+      alert('Selecciona un partido y un jugador');
+      return;
+    }
 
-        .btn:active {
-            transform: translateY(0);
-        }
+    const nuevaStat = {
+      id: Date.now().toString(),
+      ...formStats
+    };
 
-        .player-card {
-            background: #f8f9fa;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid transparent;
-        }
+    const nuevasEstadisticas = [...estadisticas, nuevaStat];
+    await saveEstadisticas(nuevasEstadisticas);
+    
+    alert('Estadísticas guardadas correctamente');
+  };
 
-        .player-card:hover {
-            border-color: #667eea;
-            transform: translateX(5px);
-        }
+  // Calcular estadísticas globales del jugador
+  const calcularEstadisticasGlobales = (jugadorId) => {
+    const statsJugador = estadisticas.filter(s => s.jugadorId === jugadorId);
+    
+    if (statsJugador.length === 0) return null;
 
-        .player-card h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
+    const totales = {
+      saqueFavorable: 0,
+      saqueFallado: 0,
+      ataqueFavorable: 0,
+      ataqueFallado: 0,
+      bloqueoFavorable: 0,
+      bloqueoFallado: 0,
+      armadoFavorable: 0,
+      armadoFallado: 0,
+      recepcionDoblePositiva: 0,
+      recepcionPositiva: 0,
+      recepcionNegativa: 0,
+      recepcionNegativaJuego: 0
+    };
 
-        .player-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
+    statsJugador.forEach(stat => {
+      Object.keys(totales).forEach(key => {
+        totales[key] += parseInt(stat[key]) || 0;
+      });
+    });
 
-        .player-info span {
-            background: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.9em;
-        }
+    return totales;
+  };
 
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 1000;
-            overflow-y: auto;
-        }
+  // Calcular eficiencia para el gráfico
+  const calcularEficiencia = (jugador, stats) => {
+    if (!stats) return [];
 
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+    const esLibero = jugador.posiciones.length === 1 && jugador.posiciones[0] === 'Líbero';
 
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            max-width: 800px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
+    if (esLibero) {
+      const totalRecepcion = stats.recepcionDoblePositiva + stats.recepcionPositiva + 
+                             stats.recepcionNegativa + stats.recepcionNegativaJuego;
+      const totalArmado = stats.armadoFavorable + stats.armadoFallado;
 
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #dee2e6;
-        }
+      const recepcionEficiencia = totalRecepcion > 0 
+        ? ((stats.recepcionDoblePositiva * 3 + stats.recepcionPositiva * 2) / (totalRecepcion * 3)) * 100 
+        : 0;
+      
+      const armadoEficiencia = totalArmado > 0 
+        ? (stats.armadoFavorable / totalArmado) * 100 
+        : 0;
 
-        .close-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-        }
+      return [
+        { stat: 'Recepción', value: Math.round(recepcionEficiencia) },
+        { stat: 'Armado', value: Math.round(armadoEficiencia) }
+      ];
+    }
 
-        .stats-section {
-            margin-top: 30px;
-        }
+    // Para jugadores no líberos
+    const totalSaque = stats.saqueFavorable + stats.saqueFallado;
+    const totalAtaque = stats.ataqueFavorable + stats.ataqueFallado;
+    const totalBloqueo = stats.bloqueoFavorable + stats.bloqueoFallado;
+    const totalArmado = stats.armadoFavorable + stats.armadoFallado;
+    const totalRecepcion = stats.recepcionDoblePositiva + stats.recepcionPositiva + 
+                           stats.recepcionNegativa + stats.recepcionNegativaJuego;
 
-        .stats-section h3 {
-            color: #667eea;
-            margin-bottom: 15px;
-        }
+    return [
+      { 
+        stat: 'Saque', 
+        value: totalSaque > 0 ? Math.round((stats.saqueFavorable / totalSaque) * 100) : 0 
+      },
+      { 
+        stat: 'Ataque', 
+        value: totalAtaque > 0 ? Math.round((stats.ataqueFavorable / totalAtaque) * 100) : 0 
+      },
+      { 
+        stat: 'Bloqueo', 
+        value: totalBloqueo > 0 ? Math.round((stats.bloqueoFavorable / totalBloqueo) * 100) : 0 
+      },
+      { 
+        stat: 'Armado', 
+        value: totalArmado > 0 ? Math.round((stats.armadoFavorable / totalArmado) * 100) : 0 
+      },
+      { 
+        stat: 'Recepción', 
+        value: totalRecepcion > 0 
+          ? Math.round(((stats.recepcionDoblePositiva * 3 + stats.recepcionPositiva * 2) / (totalRecepcion * 3)) * 100)
+          : 0 
+      }
+    ];
+  };
 
-        .chart-container {
-            position: relative;
-            height: 400px;
-            margin: 30px 0;
-        }
+  // Obtener jugadores filtrados por partido
+  const getJugadoresPorPartido = (partidoId) => {
+    const partido = partidos.find(p => p.id === partidoId);
+    if (!partido) return jugadores;
+    
+    return jugadores.filter(j => 
+      j.rama === partido.rama && j.categoria === partido.categoria
+    );
+  };
 
-        .partido-item {
-            background: #f8f9fa;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+        <div className="text-white text-2xl">Cargando...</div>
+      </div>
+    );
+  }
 
-        .partido-item:hover {
-            background: #e9ecef;
-            transform: translateX(5px);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .stat-card h4 {
-            font-size: 0.9em;
-            opacity: 0.9;
-            margin-bottom: 10px;
-        }
-
-        .stat-card p {
-            font-size: 2em;
-            font-weight: bold;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6c757d;
-        }
-
-        .empty-state h3 {
-            margin-bottom: 10px;
-        }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 1.8em;
-            }
-            
-            .tabs {
-                flex-direction: column;
-            }
-            
-            .player-info {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>⚡ Ateneo Voley</h1>
-            <p>Gestión del equipo</p>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h1 className="text-4xl font-bold text-purple-800 mb-2">⚡ Ateneo Voley</h1>
+          <p className="text-gray-600">Gestión del equipo</p>
         </div>
 
-        <div class="tabs">
-            <button class="tab active" onclick="switchTab('jugadores')">👥 Jugadores</button>
-            <button class="tab" onclick="switchTab('partidos')">🏐 Partidos</button>
-            <button class="tab" onclick="switchTab('estadisticas')">📊 Estadísticas</button>
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('jugadores')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'jugadores'
+                ? 'bg-white text-purple-600 shadow-lg'
+                : 'bg-purple-500 text-white hover:bg-purple-400'
+            }`}
+          >
+            <Users size={20} />
+            Jugadores
+          </button>
+          <button
+            onClick={() => setActiveTab('partidos')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'partidos'
+                ? 'bg-white text-purple-600 shadow-lg'
+                : 'bg-purple-500 text-white hover:bg-purple-400'
+            }`}
+          >
+            <Calendar size={20} />
+            Partidos
+          </button>
+          <button
+            onClick={() => setActiveTab('estadisticas')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'estadisticas'
+                ? 'bg-white text-purple-600 shadow-lg'
+                : 'bg-purple-500 text-white hover:bg-purple-400'
+            }`}
+          >
+            <BarChart3 size={20} />
+            Estadísticas
+          </button>
         </div>
 
-        <div class="content">
-            <!-- TAB JUGADORES -->
-            <div id="jugadores" class="tab-content active">
-                <h2 style="margin-bottom: 20px;">Agregar Jugador</h2>
-                <form id="form-jugador" onsubmit="agregarJugador(event)">
-                    <div class="form-group">
-                        <label>Nombre y Apellido</label>
-                        <input type="text" id="nombre" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Rama</label>
-                        <select id="rama" required>
-                            <option value="">Seleccionar...</option>
-                            <option value="Masculino">Masculino</option>
-                            <option value="Femenino">Femenino</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Categoría</label>
-                        <select id="categoria" required>
-                            <option value="">Seleccionar...</option>
-                            <option value="SUB 14">SUB 14</option>
-                            <option value="SUB 16">SUB 16</option>
-                            <option value="SUB 18">SUB 18</option>
-                            <option value="SUB 21">SUB 21</option>
-                            <option value="Mayores">Mayores</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Dorsal</label>
-                        <input type="number" id="dorsal" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Posición (mantén Ctrl/Cmd para seleccionar múltiples)</label>
-                        <select id="posicion" multiple required style="height: 150px;">
-                            <option value="Armador">Armador</option>
-                            <option value="Opuesto">Opuesto</option>
-                            <option value="Central">Central</option>
-                            <option value="Punta">Punta</option>
-                            <option value="Líbero">Líbero</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn">Agregar Jugador</button>
-                </form>
+        {/* Contenido */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          {/* TAB JUGADORES */}
+          {activeTab === 'jugadores' && !selectedJugador && (
+            <div>
+              <h2 className="text-2xl font-bold text-purple-800 mb-4">Gestión de Jugadores</h2>
+              
+              <form onSubmit={handleAddJugador} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <input
+                  type="text"
+                  placeholder="Nombre"
+                  value={formJugador.nombre}
+                  onChange={(e) => setFormJugador({ ...formJugador, nombre: e.target.value })}
+                  className="border border-gray-300 rounded-lg px-4 py-2"
+                />
+                <input
+                  type="text"
+                  placeholder="Apellido"
+                  value={formJugador.apellido}
+                  onChange={(e) => setFormJugador({ ...formJugador, apellido: e.target.value })}
+                  className="border border-gray-300 rounded-lg px-4 py-2"
+                />
+                <select
+                  value={formJugador.rama}
+                  onChange={(e) => setFormJugador({ ...formJugador, rama: e.target.value })}
+                  className="border border-gray-300 rounded-lg px-4 py-2"
+                >
+                  <option value="">Seleccionar Rama</option>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Femenino">Femenino</option>
+                </select>
+                <select
+                  value={formJugador.categoria}
+                  onChange={(e) => setFormJugador({ ...formJugador, categoria: e.target.value })}
+                  className="border border-gray-300 rounded-lg px-4 py-2"
+                >
+                  <option value="">Seleccionar Categoría</option>
+                  <option value="SUB 14">SUB 14</option>
+                  <option value="SUB 16">SUB 16</option>
+                  <option value="SUB 18">SUB 18</option>
+                  <option value="SUB 21">SUB 21</option>
+                  <option value="Mayores">Mayores</option>
+                </select>
+                <input
+                  type="number"
+                  placeholder="Dorsal"
+                  value={formJugador.dorsal}
+                  onChange={(e) => setFormJugador({ ...formJugador, dorsal: e.target.value })}
+                  className="border border-gray-300 rounded-lg px-4 py-2"
+                />
+                <div className="border border-gray-300 rounded-lg px-4 py-2">
+                  <p className="text-sm text-gray-600 mb-2">Posiciones (mantén Ctrl para seleccionar varias)</p>
+                  <div className="space-y-1">
+                    {['Armador', 'Central', 'Opuesto', 'Punta', 'Líbero'].map(pos => (
+                      <label key={pos} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formJugador.posiciones.includes(pos)}
+                          onChange={() => handlePosicionChange(pos)}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">{pos}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="md:col-span-2 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                >
+                  Agregar Jugador
+                </button>
+              </form>
 
-                <h2 style="margin-top: 40px; margin-bottom: 20px;">Lista de Jugadores</h2>
-                <div id="lista-jugadores"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {jugadores.map(jugador => (
+                  <div
+                    key={jugador.id}
+                    onClick={() => setSelectedJugador(jugador)}
+                    className="bg-gradient-to-br from-purple-100 to-blue-100 p-4 rounded-lg cursor-pointer hover:shadow-lg transition-all"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="bg-purple-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl">
+                        {jugador.dorsal}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg">{jugador.nombre} {jugador.apellido}</h3>
+                        <p className="text-sm text-gray-600">{jugador.posiciones.join(', ')}</p>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-700">
+                      <p><strong>Rama:</strong> {jugador.rama}</p>
+                      <p><strong>Categoría:</strong> {jugador.categoria}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+          )}
 
-            <!-- TAB PARTIDOS -->
-            <div id="partidos" class="tab-content">
-                <h2 style="margin-bottom: 20px;">Crear Partido</h2>
-                <form id="form-partido" onsubmit="crearPartido(event)">
-                    <div class="form-group">
-                        <label>Rival</label>
-                        <input type="text" id="rival" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Fecha</label>
-                        <input type="date" id="fecha" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Rama</label>
-                        <select id="rama-partido" required>
-                            <option value="">Seleccionar...</option>
-                            <option value="Masculino">Masculino</option>
-                            <option value="Femenino">Femenino</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Categoría</label>
-                        <select id="categoria-partido" required>
-                            <option value="">Seleccionar...</option>
-                            <option value="SUB 14">SUB 14</option>
-                            <option value="SUB 16">SUB 16</option>
-                            <option value="SUB 18">SUB 18</option>
-                            <option value="SUB 21">SUB 21</option>
-                            <option value="Mayores">Mayores</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Local/Visitante</label>
-                        <select id="local-visitante" required>
-                            <option value="">Seleccionar...</option>
-                            <option value="Local">Local</option>
-                            <option value="Visitante">Visitante</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn">Crear Partido</button>
-                </form>
+          {/* PERFIL JUGADOR */}
+          {activeTab === 'jugadores' && selectedJugador && (
+            <div>
+              <button
+                onClick={() => setSelectedJugador(null)}
+                className="mb-4 text-purple-600 hover:text-purple-800 font-semibold"
+              >
+                ← Volver a Jugadores
+              </button>
+              
+              <div className="bg-gradient-to-br from-purple-100 to-blue-100 p-6 rounded-lg mb-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="bg-purple-600 text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl">
+                    {selectedJugador.dorsal}
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold">{selectedJugador.nombre} {selectedJugador.apellido}</h2>
+                    <p className="text-lg text-gray-700">{selectedJugador.posiciones.join(', ')}</p>
+                    <p className="text-sm text-gray-600">{selectedJugador.rama} - {selectedJugador.categoria}</p>
+                  </div>
+                </div>
+              </div>
 
-                <h2 style="margin-top: 40px; margin-bottom: 20px;">Partidos Programados</h2>
-                <div id="lista-partidos"></div>
-            </div>
+              {/* Gráfico de Eficiencia Global */}
+              <div className="mb-6">
+                <h3 className="text-xl font-bold mb-4">Eficiencia Global</h3>
+                {calcularEstadisticasGlobales(selectedJugador.id) ? (
+                  <ResponsiveContainer width="100%" height={400}>
+                    <RadarChart data={calcularEficiencia(selectedJugador, calcularEstadisticasGlobales(selectedJugador.id))}>
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="stat" />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                      <Radar name="Eficiencia %" dataKey="value" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.6} />
+                      <Legend />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-gray-600">No hay estadísticas registradas aún</p>
+                )}
+              </div>
 
-            <!-- TAB ESTADÍSTICAS -->
-            <div id="estadisticas" class="tab-content">
-                <h2 style="margin-bottom: 20px;">Cargar Estadísticas</h2>
-                <form id="form-estadisticas" onsubmit="guardarEstadisticas(event)">
-                    <div class="form-group">
-                        <label>Partido</label>
-                        <select id="select-partido" required onchange="actualizarJugadoresDisponibles()">
-                            <option value="">Seleccionar partido...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Jugador</label>
-                        <select id="select-jugador" required>
-                            <option value="">Seleccionar jugador...</option>
-                        </select>
-                    </div>
-
-                    <h3 style="margin: 30px 0 20px 0; color: #667eea;">Estadísticas del Partido</h3>
+              {/* Partidos Jugados */}
+              <h3 className="text-xl font-bold mb-4">Partidos Jugados</h3>
+              <div className="space-y-4">
+                {estadisticas
+                  .filter(stat => stat.jugadorId === selectedJugador.id)
+                  .map(stat => {
+                    const partido = partidos.find(p => p.id === stat.partidoId);
+                    if (!partido) return null;
                     
-                    <div class="form-group">
-                        <label>Saque Favorable</label>
-                        <input type="number" id="saque-fav" min="0" value="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Saque Fallado</label>
-                        <input type="number" id="saque-fall" min="0" value="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Ataque Favorable</label>
-                        <input type="number" id="ataque-fav" min="0" value="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Ataque Fallado</label>
-                        <input type="number" id="ataque-fall" min="0" value="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Bloqueo Favorable</label>
-                        <input type="number" id="bloqueo-fav" min="0" value="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Bloqueo Fallado</label>
-                        <input type="number" id="bloqueo-fall" min="0" value="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Armado Favorable</label>
-                        <input type="number" id="armado-fav" min="0" value="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Armado Fallado</label>
-                        <input type="number" id="armado-fall" min="0" value="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Recepción Doble Positiva</label>
-                        <input type="number" id="recep-doble-pos" min="0" value="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Recepción Positiva</label>
-                        <input type="number" id="recep-pos" min="0" value="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Recepción Negativa</label>
-                        <input type="number" id="recep-neg" min="0" value="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Recepción Negativa de Juego</label>
-                        <input type="number" id="recep-neg-juego" min="0" value="0" required>
-                    </div>
+                    return (
+                      <div key={stat.id} className="border border-gray-300 rounded-lg p-4">
+                        <h4 className="font-bold text-lg mb-2">vs {partido.rival} - {partido.fecha}</h4>
+                        <p className="text-sm text-gray-600 mb-3">{partido.tipo} - {partido.rama} {partido.categoria}</p>
+                        
+                        {/* Gráfico del partido individual */}
+                        <ResponsiveContainer width="100%" height={300}>
+                          <RadarChart data={calcularEficiencia(selectedJugador, stat)}>
+                            <PolarGrid />
+                            <PolarAngleAxis dataKey="stat" />
+                            <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                            <Radar name="Eficiencia %" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+                            <Legend />
+                          </RadarChart>
+                        </ResponsiveContainer>
 
-                    <button type="submit" class="btn">Guardar Estadísticas</button>
-                </form>
+                        {/* Detalles numéricos */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4 text-sm">
+                          {selectedJugador.posiciones.length === 1 && selectedJugador.posiciones[0] === 'Líbero' ? (
+                            <>
+                              <div><strong>Armado:</strong> {stat.armadoFavorable}/{stat.armadoFallado}</div>
+                              <div><strong>Rec. Doble +:</strong> {stat.recepcionDoblePositiva}</div>
+                              <div><strong>Rec. +:</strong> {stat.recepcionPositiva}</div>
+                              <div><strong>Rec. -:</strong> {stat.recepcionNegativa}</div>
+                              <div><strong>Rec. - Juego:</strong> {stat.recepcionNegativaJuego}</div>
+                            </>
+                          ) : (
+                            <>
+                              <div><strong>Saque:</strong> {stat.saqueFavorable}/{stat.saqueFallado}</div>
+                              <div><strong>Ataque:</strong> {stat.ataqueFavorable}/{stat.ataqueFallado}</div>
+                              <div><strong>Bloqueo:</strong> {stat.bloqueoFavorable}/{stat.bloqueoFallado}</div>
+                              <div><strong>Armado:</strong> {stat.armadoFavorable}/{stat.armadoFallado}</div>
+                              <div><strong>Rec. Doble +:</strong> {stat.recepcionDoblePositiva}</div>
+                              <div><strong>Rec. +:</strong> {stat.recepcionPositiva}</div>
+                              <div><strong>Rec. -:</strong> {stat.recepcionNegativa}</div>
+                              <div><strong>Rec. - Juego:</strong> {stat.recepcionNegativaJuego}</div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
+          )}
+
+          {/* TAB PARTIDOS */}
+          {activeTab === 'partidos' && (
+            <div>
+              <h2 className="text-2xl font-bold text-purple-800 mb-4">Gestión de Partidos</h2>
+              
+              <form onSubmit={handleAddPartido} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <input
+                  type="text"
+                  placeholder="Rival"
+                  value={formPartido.rival}
+                  onChange={(e) => setFormPartido({ ...formPartido, rival: e.target.value })}
+                  className="border border-gray-300 rounded-lg px-4 py-2"
+                />
+                <input
+                  type="date"
+                  value={formPartido.fecha}
+                  onChange={(e) => setFormPartido({ ...formPartido, fecha: e.target.value })}
+                  className="border border-gray-300 rounded-lg px-4 py-2"
+                />
+                <select
+                  value={formPartido.tipo}
+                  onChange={(e) => setFormPartido({ ...formPartido, tipo: e.target.value })}
+                  className="border border-gray-300 rounded-lg px-4 py-2"
+                >
+                  <option value="">Tipo de Partido</option>
+                  <option value="Local">Local</option>
+                  <option value="Visitante">Visitante</option>
+                </select>
+                <select
+                  value={formPartido.rama}
+                  onChange={(e) => setFormPartido({ ...formPartido, rama: e.target.value })}
+                  className="border border-gray-300 rounded-lg px-4 py-2"
+                >
+                  <option value="">Seleccionar Rama</option>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Femenino">Femenino</option>
+                </select>
+                <select
+                  value={formPartido.categoria}
+                  onChange={(e) => setFormPartido({ ...formPartido, categoria: e.target.value })}
+                  className="border border-gray-300 rounded-lg px-4 py-2"
+                >
+                  <option value="">Seleccionar Categoría</option>
+                  <option value="SUB 14">SUB 14</option>
+                  <option value="SUB 16">SUB 16</option>
+                  <option value="SUB 18">SUB 18</option>
+                  <option value="SUB 21">SUB 21</option>
+                  <option value="Mayores">Mayores</option>
+                </select>
+                <button
+                  type="submit"
+                  className="md:col-span-2 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                >
+                  Crear Partido
+                </button>
+              </form>
+
+              <div className="space-y-4">
+                {partidos.map(partido => (
+                  <div key={partido.id} className="bg-gradient-to-r from-blue-100 to-purple-100 p-4 rounded-lg">
+                    <h3 className="font-bold text-lg">vs {partido.rival}</h3>
+                    <p className="text-sm text-gray-700">
+                      📅 {partido.fecha} | 📍 {partido.tipo} | {partido.rama} - {partido.categoria}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB ESTADÍSTICAS */}
+          {activeTab === 'estadisticas' && (
+            <div>
+              <h2 className="text-2xl font-bold text-purple-800 mb-4">Cargar Estadísticas</h2>
+              
+              <form onSubmit={handleAddStats} className="space-y-4">
+                <select
+                  value={formStats.partidoId}
+                  onChange={(e) => setFormStats({ ...formStats, partidoId: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                >
+                  <option value="">Seleccionar Partido</option>
+                  {partidos.map(partido => (
+                    <option key={partido.id} value={partido.id}>
+                      vs {partido.rival} - {partido.fecha} ({partido.rama} {partido.categoria})
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={formStats.jugadorId}
+                  onChange={(e) => setFormStats({ ...formStats, jugadorId: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                >
+                  <option value="">Seleccionar Jugador</option>
+                  {getJugadoresPorPartido(formStats.partidoId).map(jugador => (
+                    <option key={jugador.id} value={jugador.id}>
+                      #{jugador.dorsal} - {jugador.nombre} {jugador.apellido}
+                    </option>
+                  ))}
+                </select>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Saque Favorable</label>
+                    <input
+                      type="number"
+                      value={formStats.saqueFavorable}
+                      onChange={(e) => setFormStats({ ...formStats, saqueFavorable: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Saque Fallado</label>
+                    <input
+                      type="number"
+                      value={formStats.saqueFallado}
+                      onChange={(e) => setFormStats({ ...formStats, saqueFallado: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Ataque Favorable</label>
+                    <input
+                      type="number"
+                      value={formStats.ataqueFavorable}
+                      onChange={(e) => setFormStats({ ...formStats, ataqueFavorable: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Ataque Fallado</label>
+                    <input
+                      type="number"
+                      value={formStats.ataqueFallado}
+                      onChange={(e) => setFormStats({ ...formStats, ataqueFallado: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Bloqueo Favorable</label>
+                    <input
+                      type="number"
+                      value={formStats.bloqueoFavorable}
+                      onChange={(e) => setFormStats({ ...formStats, bloqueoFavorable: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Bloqueo Fallado</label>
+                    <input
+                      type="number"
+                      value={formStats.bloqueoFallado}
+                      onChange={(e) => setFormStats({ ...formStats, bloqueoFallado: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Armado Favorable</label>
+                    <input
+                      type="number"
+                      value={formStats.armadoFavorable}
+                      onChange={(e) => setFormStats({ ...formStats, armadoFavorable: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Armado Fallado</label>
+                    <input
+                      type="number"
+                      value={formStats.armadoFallado}
+                      onChange={(e) => setFormStats({ ...formStats, armadoFallado: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Recepción Doble Positiva</label>
+                    <input
+                      type="number"
+                      value={formStats.recepcionDoblePositiva}
+                      onChange={(e) => setFormStats({ ...formStats, recepcionDoblePositiva: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Recepción Positiva</label>
+                    <input
+                      type="number"
+                      value={formStats.recepcionPositiva}
+                      onChange={(e) => setFormStats({ ...formStats, recepcionPositiva: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Recepción Negativa</label>
+                    <input
+                      type="number"
+                      value={formStats.recepcionNegativa}
+                      onChange={(e) => setFormStats({ ...formStats, recepcionNegativa: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Recepción Negativa de Juego</label>
+                    <input
+                      type="number"
+                      value={formStats.recepcionNegativaJuego}
+                      onChange={(e) => setFormStats({ ...formStats, recepcionNegativaJuego: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                >
+                  Guardar Estadísticas
+                </button>
+              </form>
+            </div>
+          )}
         </div>
+      </div>
     </div>
+  );
+};
 
-    <!-- MODAL PERFIL JUGADOR -->
-    <div id="modal-jugador" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-nombre"></h2>
-                <button class="close-btn" onclick="cerrarModal()">Cerrar</button>
-            </div>
-            <div id="modal-info"></div>
-            <div class="stats-section">
-                <h3>Eficiencia Global</h3>
-                <div class="chart-container">
-                    <canvas id="chart-global"></canvas>
-                </div>
-            </div>
-            <div class="stats-section">
-                <h3>Partidos Jugados</h3>
-                <div id="partidos-jugados"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL PARTIDO ESPECÍFICO -->
-    <div id="modal-partido-stats" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-partido-titulo"></h2>
-                <button class="close-btn" onclick="cerrarModalPartido()">Cerrar</button>
-            </div>
-            <div class="chart-container">
-                <canvas id="chart-partido"></canvas>
-            </div>
-            <div id="stats-partido-detalle"></div>
-        </div>
-    </div>
-
-    <script>
-        // Datos en memoria
-        let jugadores = [];
-        let partidos = [];
-        let estadisticas = [];
-        let chartGlobal = null;
-        let chartPartido = null;
-
-        // Cargar datos al inicio
-        async function cargarDatos() {
-            try {
-                const jugadoresData = await window.storage.get('jugadores');
-                if (jugadoresData) jugadores = JSON.parse(jugadoresData.value);
-
-                const partidosData = await window.storage.get('partidos');
-                if (partidosData) partidos = JSON.parse(partidosData.value);
-
-                const estadisticasData = await window.storage.get('estadisticas');
-                if (estadisticasData) estadisticas = JSON.parse(estadisticasData.value);
-
-                actualizarUI();
-            } catch (error) {
-                console.log('Iniciando con datos vacíos');
-            }
-        }
-
-        // Guardar datos
-        async function guardarDatos() {
-            try {
-                await window.storage.set('jugadores', JSON.stringify(jugadores));
-                await window.storage.set('partidos', JSON.stringify(partidos));
-                await window.storage.set('estadisticas', JSON.stringify(estadisticas));
-            } catch (error) {
-                console.error('Error al guardar:', error);
-            }
-        }
-
-        // Cambiar tab
-        function switchTab(tabName) {
-            // Ocultar todos los tabs
-            const tabs = document.querySelectorAll('.tab-content');
-            tabs.forEach(tab => tab.classList.remove('active'));
-
-            // Quitar clase active de botones
-            const tabButtons = document.querySelectorAll('.tab');
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-
-            // Mostrar tab seleccionado
-            document.getElementById(tabName).classList.add('active');
-
-            // Activar botón correspondiente
-            event.target.classList.add('active');
-
-            // Actualizar UI según el tab
-            if (tabName === 'jugadores') {
-                mostrarJugadores();
-            } else if (tabName === 'partidos') {
-                mostrarPartidos();
-            } else if (tabName === 'estadisticas') {
-                actualizarSelectPartidos();
-            }
-        }
-
-        // Agregar jugador
-        function agregarJugador(event) {
-            event.preventDefault();
-            
-            const posicionSelect = document.getElementById('posicion');
-            const posicionesSeleccionadas = Array.from(posicionSelect.selectedOptions).map(opt => opt.value);
-
-            const jugador = {
-                id: Date.now(),
-                nombre: document.getElementById('nombre').value,
-                rama: document.getElementById('rama').value,
-                categoria: document.getElementById('categoria').value,
-                dorsal: document.getElementById('dorsal').value,
-                posicion: posicionesSeleccionadas
-            };
-
-            jugadores.push(jugador);
-            guardarDatos();
-            mostrarJugadores();
-            document.getElementById('form-jugador').reset();
-            alert('Jugador agregado exitosamente');
-        }
-
-        // Mostrar jugadores
-        function mostrarJugadores() {
-            const lista = document.getElementById('lista-jugadores');
-            
-            if (jugadores.length === 0) {
-                lista.innerHTML = '<div class="empty-state"><h3>No hay jugadores</h3><p>Agrega tu primer jugador usando el formulario</p></div>';
-                return;
-            }
-
-            lista.innerHTML = jugadores.map(j => `
-                <div class="player-card" onclick="verPerfilJugador(${j.id})">
-                    <h3>${j.nombre} #${j.dorsal}</h3>
-                    <div class="player-info">
-                        <span><strong>Rama:</strong> ${j.rama}</span>
-                        <span><strong>Categoría:</strong> ${j.categoria}</span>
-                        <span><strong>Posición:</strong> ${j.posicion.join(', ')}</span>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Crear partido
-        function crearPartido(event) {
-            event.preventDefault();
-
-            const partido = {
-                id: Date.now(),
-                rival: document.getElementById('rival').value,
-                fecha: document.getElementById('fecha').value,
-                rama: document.getElementById('rama-partido').value,
-                categoria: document.getElementById('categoria-partido').value,
-                localVisitante: document.getElementById('local-visitante').value
-            };
-
-            partidos.push(partido);
-            guardarDatos();
-            mostrarPartidos();
-            document.getElementById('form-partido').reset();
-            alert('Partido creado exitosamente');
-        }
-
-        // Mostrar partidos
-        function mostrarPartidos() {
-            const lista = document.getElementById('lista-partidos');
-            
-            if (partidos.length === 0) {
-                lista.innerHTML = '<div class="empty-state"><h3>No hay partidos</h3><p>Crea tu primer partido usando el formulario</p></div>';
-                return;
-            }
-
-            lista.innerHTML = partidos.map(p => `
-                <div class="partido-item">
-                    <h3>vs ${p.rival}</h3>
-                    <p><strong>Fecha:</strong> ${new Date(p.fecha).toLocaleDateString()}</p>
-                    <p><strong>Rama:</strong> ${p.rama} | <strong>Categoría:</strong> ${p.categoria}</p>
-                    <p><strong>Tipo:</strong> ${p.localVisitante}</p>
-                </div>
-            `).join('');
-        }
-
-        // Actualizar select de partidos
-        function actualizarSelectPartidos() {
-            const select = document.getElementById('select-partido');
-            select.innerHTML = '<option value="">Seleccionar partido...</option>' +
-                partidos.map(p => `
-                    <option value="${p.id}">vs ${p.rival} - ${new Date(p.fecha).toLocaleDateString()} (${p.rama} ${p.categoria})</option>
-                `).join('');
-        }
-
-        // Actualizar jugadores disponibles según el partido seleccionado
-        function actualizarJugadoresDisponibles() {
-            const partidoId = parseInt(document.getElementById('select-partido').value);
-            const selectJugador = document.getElementById('select-jugador');
-
-            if (!partidoId) {
-                selectJugador.innerHTML = '<option value="">Seleccionar jugador...</option>';
-                return;
-            }
-
-            const partido = partidos.find(p => p.id === partidoId);
-            const jugadoresFiltrados = jugadores.filter(j => 
-                j.rama === partido.rama && j.categoria === partido.categoria
-            );
-
-            selectJugador.innerHTML = '<option value="">Seleccionar jugador...</option>' +
-                jugadoresFiltrados.map(j => `
-                    <option value="${j.id}">${j.nombre} #${j.dorsal}</option>
-                `).join('');
-        }
-
-        // Guardar estadísticas
-        function guardarEstadisticas(event) {
-            event.preventDefault();
-
-            const stat = {
-                partidoId: parseInt(document.getElementById('select-partido').value),
-                jugadorId: parseInt(document.getElementById('select-jugador').value),
-                saqueFav: parseInt(document.getElementById('saque-fav').value),
-                saqueFall: parseInt(document.getElementById('saque-fall').value),
-                ataqueFav: parseInt(document.getElementById('ataque-fav').value),
-                ataqueFall: parseInt(document.getElementById('ataque-fall').value),
-                bloqueoFav: parseInt(document.getElementById('bloqueo-fav').value),
-                bloqueoFall: parseInt(document.getElementById('bloqueo-fall').value),
-                armadoFav: parseInt(document.getElementById('armado-fav').value),
-                armadoFall: parseInt(document.getElementById('armado-fall').value),
-                recepDoblePos: parseInt(document.getElementById('recep-doble-pos').value),
-                recepPos: parseInt(document.getElementById('recep-pos').value),
-                recepNeg: parseInt(document.getElementById('recep-neg').value),
-                recepNegJuego: parseInt(document.getElementById('recep-neg-juego').value)
-            };
-
-            // Verificar si ya existe y actualizar, sino agregar
-            const index = estadisticas.findIndex(e => 
-                e.partidoId === stat.partidoId && e.jugadorId === stat.jugadorId
-            );
-
-            if (index !== -1) {
-                estadisticas[index] = stat;
-            } else {
-                estadisticas.push(stat);
-            }
-
-            guardarDatos();
-            document.getElementById('form-estadisticas').reset();
-            alert('Estadísticas guardadas exitosamente');
-        }
-
-        // Ver perfil de jugador
-        function verPerfilJugador(jugadorId) {
-            const jugador = jugadores.find(j => j.id === jugadorId);
-            const modal = document.getElementById('modal-jugador');
-            
-            document.getElementById('modal-nombre').textContent = `${jugador.nombre} #${jugador.dorsal}`;
-            document.getElementById('modal-info').innerHTML = `
-                <div class="player-info">
-                    <span><strong>Rama:</strong> ${jugador.rama}</span>
-                    <span><strong>Categoría:</strong> ${jugador.categoria}</span>
-                    <span><strong>Posición:</strong> ${jugador.posicion.join(', ')}</span>
-                </div>
-            `;
-
-            // Calcular estadísticas globales
-            const statsJugador = estadisticas.filter(e => e.jugadorId === jugadorId);
-            const esLibero = jugador.posicion.length === 1 && jugador.posicion[0] === 'Líbero';
-            
-            mostrarGraficoGlobal(statsJugador, esLibero);
-            mostrarPartidosJugados(jugadorId, statsJugador);
-
-            modal.classList.add('active');
-        }
-
-        // Cerrar modal
-        function cerrarModal() {
-            document.getElementById('modal-jugador').classList.remove('active');
-            if (chartGlobal) {
-                chartGlobal.destroy();
-                chartGlobal = null;
-            }
-        }
-
-        // Mostrar gráfico global
-        function mostrarGraficoGlobal(stats, esLibero) {
-            if (chartGlobal) {
-                chartGlobal.destroy();
-            }
-
-            const ctx = document.getElementById('chart-global').getContext('2d');
-
-            let labels, data;
-
-            if (esLibero) {
-                // Solo recepción y armado para líberos
-                const totalRecep = stats.reduce((sum, s) => sum + s.recepDoblePos + s.recepPos, 0);
-                const totalRecepNeg = stats.reduce((sum, s) => sum + s.recepNeg + s.recepNegJuego, 0);
-                const totalArmado = stats.reduce((sum, s) => sum + s.armadoFav, 0);
-                const totalArmadoFall = stats.reduce((sum, s) => sum + s.armadoFall, 0);
-
-                const eficRecep = totalRecep + totalRecepNeg > 0 ? (totalRecep / (totalRecep + totalRecepNeg) * 100) : 0;
-                const eficArmado = totalArmado + totalArmadoFall > 0 ? (totalArmado / (totalArmado + totalArmadoFall) * 100) : 0;
-
-                labels = ['Recepción', 'Armado'];
-                data = [eficRecep, eficArmado];
-            } else {
-                // Todas las estadísticas para otros jugadores
-                const totalSaque = stats.reduce((sum, s) => sum + s.saqueFav, 0);
-                const totalSaqueFall = stats.reduce((sum, s) => sum + s.saqueFall, 0);
-                const totalAtaque = stats.reduce((sum, s) => sum + s.ataqueFav, 0);
-                const totalAtaqueFall = stats.reduce((sum, s) => sum + s.ataqueFall, 0);
-                const totalBloqueo = stats.reduce((sum, s) => sum + s.bloqueoFav, 0);
-                const totalBloqueoFall = stats.reduce((sum, s) => sum + s.bloqueoFall, 0);
-                const totalArmado = stats.reduce((sum, s) => sum + s.armadoFav, 0);
-                const totalArmadoFall = stats.reduce((sum, s) => sum + s.armadoFall, 0);
-                const totalRecep = stats.reduce((sum, s) => sum + s.recepDoblePos + s.recepPos, 0);
-                const totalRecepNeg = stats.reduce((sum, s) => sum + s.recepNeg + s.recepNegJuego, 0);
-
-                const eficSaque = totalSaque + totalSaqueFall > 0 ? (totalSaque / (totalSaque + totalSaqueFall) * 100) : 0;
-                const eficAtaque = totalAtaque + totalAtaqueFall > 0 ? (totalAtaque / (totalAtaque + totalAtaqueFall) * 100) : 0;
-                const eficBloqueo = totalBloqueo + totalBloqueoFall > 0 ? (totalBloqueo / (totalBloqueo + totalBloqueoFall) * 100) : 0;
-                const eficArmado = totalArmado + totalArmadoFall > 0 ? (totalArmado / (totalArmado + totalArmadoFall) * 100) : 0;
-                const eficRecep = totalRecep + totalRecepNeg > 0 ? (totalRecep / (totalRecep + totalRecepNeg) * 100) : 0;
-
-                labels = ['Saque', 'Ataque', 'Bloqueo', 'Armado', 'Recepción'];
-                data = [eficSaque, eficAtaque, eficBloqueo, eficArmado, eficRecep];
-            }
-
-            chartGlobal = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Eficiencia (%)',
-                        data: data,
-                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
-                        borderColor: 'rgba(102, 126, 234, 1)',
-                        borderWidth: 2,
-                        pointBackgroundColor: 'rgba(102, 126, 234, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(102, 126, 234, 1)'
-                    }]
-                },
-                options: {
-                    scales: {
-                        r: {
-                            beginAtZero: true,
-                            max: 100,
-                            ticks: {
-                                stepSize: 20
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
-        }
-
-        // Mostrar partidos jugados
-        function mostrarPartidosJugados(jugadorId, stats) {
-            const container = document.getElementById('partidos-jugados');
-            
-            if (stats.length === 0) {
-                container.innerHTML = '<div class="empty-state"><p>No hay estadísticas registradas</p></div>';
-                return;
-            }
-
-            container.innerHTML = stats.map(s => {
-                const partido = partidos.find(p => p.id === s.partidoId);
-                if (!partido) return '';
-                
-                return `
-                    <div class="partido-item" onclick="verEstadisticasPartido(${s.partidoId}, ${jugadorId})">
-                        <h4>vs ${partido.rival}</h4>
-                        <p>${new Date(partido.fecha).toLocaleDateString()} - ${partido.localVisitante}</p>
-                        <p style="font-size: 0.9em; color: #667eea;">Click para ver estadísticas del partido</p>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Ver estadísticas de un partido específico
-        function verEstadisticasPartido(partidoId, jugadorId) {
-            const jugador = jugadores.find(j => j.id === jugadorId);
-            const partido = partidos.find(p => p.id === partidoId);
-            const stat = estadisticas.find(e => e.partidoId === partidoId && e.jugadorId === jugadorId);
-
-            if (!stat) return;
-
-            const modal = document.getElementById('modal-partido-stats');
-            document.getElementById('modal-partido-titulo').textContent = 
-                `${jugador.nombre} vs ${partido.rival} - ${new Date(partido.fecha).toLocaleDateString()}`;
-
-            const esLibero = jugador.posicion.length === 1 && jugador.posicion[0] === 'Líbero';
-            mostrarGraficoPartido(stat, esLibero);
-            mostrarDetalleStats(stat, esLibero);
-
-            modal.classList.add('active');
-        }
-
-        // Cerrar modal partido
-        function cerrarModalPartido() {
-            document.getElementById('modal-partido-stats').classList.remove('active');
-            if (chartPartido) {
-                chartPartido.destroy();
-                chartPartido = null;
-            }
-        }
-
-        // Mostrar gráfico de partido específico
-        function mostrarGraficoPartido(stat, esLibero) {
-            if (chartPartido) {
-                chartPartido.destroy();
-            }
-
-            const ctx = document.getElementById('chart-partido').getContext('2d');
-
-            let labels, data;
-
-            if (esLibero) {
-                const totalRecep = stat.recepDoblePos + stat.recepPos;
-                const totalRecepNeg = stat.recepNeg + stat.recepNegJuego;
-                const eficRecep = totalRecep + totalRecepNeg > 0 ? (totalRecep / (totalRecep + totalRecepNeg) * 100) : 0;
-                const eficArmado = stat.armadoFav + stat.armadoFall > 0 ? (stat.armadoFav / (stat.armadoFav + stat.armadoFall) * 100) : 0;
-
-                labels = ['Recepción', 'Armado'];
-                data = [eficRecep, eficArmado];
-            } else {
-                const eficSaque = stat.saqueFav + stat.saqueFall > 0 ? (stat.saqueFav / (stat.saqueFav + stat.saqueFall) * 100) : 0;
-                const eficAtaque = stat.ataqueFav + stat.ataqueFall > 0 ? (stat.ataqueFav / (stat.ataqueFav + stat.ataqueFall) * 100) : 0;
-                const eficBloqueo = stat.bloqueoFav + stat.bloqueoFall > 0 ? (stat.bloqueoFav / (stat.bloqueoFav + stat.bloqueoFall) * 100) : 0;
-                const eficArmado = stat.armadoFav + stat.armadoFall > 0 ? (stat.armadoFav / (stat.armadoFav + stat.armadoFall) * 100) : 0;
-                const totalRecep = stat.recepDoblePos + stat.recepPos;
-                const totalRecepNeg = stat.recepNeg + stat.recepNegJuego;
-                const eficRecep = totalRecep + totalRecepNeg > 0 ? (totalRecep / (totalRecep + totalRecepNeg) * 100) : 0;
-
-                labels = ['Saque', 'Ataque', 'Bloqueo', 'Armado', 'Recepción'];
-                data = [eficSaque, eficAtaque, eficBloqueo, eficArmado, eficRecep];
-            }
-
-            chartPartido = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Eficiencia (%)',
-                        data: data,
-                        backgroundColor: 'rgba(118, 75, 162, 0.2)',
-                        borderColor: 'rgba(118, 75, 162, 1)',
-                        borderWidth: 2,
-                        pointBackgroundColor: 'rgba(118, 75, 162, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(118, 75, 162, 1)'
-                    }]
-                },
-                options: {
-                    scales: {
-                        r: {
-                            beginAtZero: true,
-                            max: 100,
-                            ticks: {
-                                stepSize: 20
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
-        }
-
-        // Mostrar detalle de estadísticas
-        function mostrarDetalleStats(stat, esLibero) {
-            const container = document.getElementById('stats-partido-detalle');
-
-            if (esLibero) {
-                container.innerHTML = `
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <h4>Armado Favorable</h4>
-                            <p>${stat.armadoFav}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Armado Fallado</h4>
-                            <p>${stat.armadoFall}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Recepción Doble +</h4>
-                            <p>${stat.recepDoblePos}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Recepción +</h4>
-                            <p>${stat.recepPos}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Recepción -</h4>
-                            <p>${stat.recepNeg}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Recepción - Juego</h4>
-                            <p>${stat.recepNegJuego}</p>
-                        </div>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = `
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <h4>Saque Favorable</h4>
-                            <p>${stat.saqueFav}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Saque Fallado</h4>
-                            <p>${stat.saqueFall}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Ataque Favorable</h4>
-                            <p>${stat.ataqueFav}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Ataque Fallado</h4>
-                            <p>${stat.ataqueFall}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Bloqueo Favorable</h4>
-                            <p>${stat.bloqueoFav}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Bloqueo Fallado</h4>
-                            <p>${stat.bloqueoFall}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Armado Favorable</h4>
-                            <p>${stat.armadoFav}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Armado Fallado</h4>
-                            <p>${stat.armadoFall}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Recepción Doble +</h4>
-                            <p>${stat.recepDoblePos}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Recepción +</h4>
-                            <p>${stat.recepPos}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Recepción -</h4>
-                            <p>${stat.recepNeg}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Recepción - Juego</h4>
-                            <p>${stat.recepNegJuego}</p>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        // Actualizar toda la UI
-        function actualizarUI() {
-            mostrarJugadores();
-            mostrarPartidos();
-            actualizarSelectPartidos();
-        }
-
-        // Inicializar aplicación
-        window.addEventListener('load', () => {
-            cargarDatos();
-        });
-
-        // Cerrar modales al hacer click fuera
-        window.addEventListener('click', (e) => {
-            if (e.target.id === 'modal-jugador') {
-                cerrarModal();
-            }
-            if (e.target.id === 'modal-partido-stats') {
-                cerrarModalPartido();
-            }
-        });
-    </script>
-</body>
-</html>
+export default VoleyStatsApp;

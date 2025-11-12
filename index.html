@@ -141,6 +141,11 @@
             transform: translateY(0);
         }
         
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
         .jugadores-list, .partidos-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -291,6 +296,27 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -352,10 +378,15 @@
                         </select>
                     </div>
                     
-                    <button type="submit" class="btn">Agregar Jugador</button>
+                    <button type="submit" class="btn" id="btnAgregarJugador">Agregar Jugador</button>
                 </form>
                 
-                <div id="jugadoresList" class="jugadores-list"></div>
+                <div id="jugadoresList" class="jugadores-list">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando jugadores...</p>
+                    </div>
+                </div>
             </div>
             
             <!-- TAB PARTIDOS -->
@@ -402,10 +433,15 @@
                         </select>
                     </div>
                     
-                    <button type="submit" class="btn">Crear Partido</button>
+                    <button type="submit" class="btn" id="btnCrearPartido">Crear Partido</button>
                 </form>
                 
-                <div id="partidosList" class="partidos-list"></div>
+                <div id="partidosList" class="partidos-list">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando partidos...</p>
+                    </div>
+                </div>
             </div>
             
             <!-- TAB ESTADÍSTICAS -->
@@ -490,7 +526,7 @@
                         </div>
                     </div>
                     
-                    <button type="submit" class="btn">Guardar Estadísticas</button>
+                    <button type="submit" class="btn" id="btnGuardarEstadisticas">Guardar Estadísticas</button>
                 </form>
             </div>
         </div>
@@ -506,57 +542,56 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxauv9rc88bXUjaoNejGHdVZ8neooHAKzMYCf1toe0mYnwfBoz06cWUDkhm6nkve1qn0w/exec';
+        
         let jugadores = [];
         let partidos = [];
         let estadisticas = [];
         
         // Cargar datos al iniciar
         window.addEventListener('load', async () => {
-            await cargarDatos();
+            await cargarTodosLosDatos();
+        });
+        
+        async function cargarTodosLosDatos() {
+            await Promise.all([
+                cargarJugadores(),
+                cargarPartidos(),
+                cargarEstadisticas()
+            ]);
             renderJugadores();
             renderPartidos();
             cargarPartidosSelect();
-        });
+        }
         
-        // PERSISTENCIA DE DATOS
-        async function cargarDatos() {
+        // FUNCIONES DE API
+        async function cargarJugadores() {
             try {
-                const jugadoresData = await window.storage.get('jugadores');
-                const partidosData = await window.storage.get('partidos');
-                const estadisticasData = await window.storage.get('estadisticas');
-                
-                if (jugadoresData) jugadores = JSON.parse(jugadoresData.value);
-                if (partidosData) partidos = JSON.parse(partidosData.value);
-                if (estadisticasData) estadisticas = JSON.parse(estadisticasData.value);
+                const response = await fetch(`${API_URL}?action=getJugadores`);
+                jugadores = await response.json();
             } catch (error) {
-                console.log('Primera vez cargando la app');
-                jugadores = [];
-                partidos = [];
-                estadisticas = [];
+                console.error('Error cargando jugadores:', error);
+                mostrarAlerta('Error al cargar jugadores', 'error');
             }
         }
         
-        async function guardarJugadores() {
+        async function cargarPartidos() {
             try {
-                await window.storage.set('jugadores', JSON.stringify(jugadores));
+                const response = await fetch(`${API_URL}?action=getPartidos`);
+                partidos = await response.json();
             } catch (error) {
-                console.error('Error guardando jugadores:', error);
+                console.error('Error cargando partidos:', error);
+                mostrarAlerta('Error al cargar partidos', 'error');
             }
         }
         
-        async function guardarPartidos() {
+        async function cargarEstadisticas() {
             try {
-                await window.storage.set('partidos', JSON.stringify(partidos));
+                const response = await fetch(`${API_URL}?action=getEstadisticas`);
+                estadisticas = await response.json();
             } catch (error) {
-                console.error('Error guardando partidos:', error);
-            }
-        }
-        
-        async function guardarEstadisticasDB() {
-            try {
-                await window.storage.set('estadisticas', JSON.stringify(estadisticas));
-            } catch (error) {
-                console.error('Error guardando estadísticas:', error);
+                console.error('Error cargando estadísticas:', error);
+                mostrarAlerta('Error al cargar estadísticas', 'error');
             }
         }
         
@@ -580,34 +615,46 @@
         async function agregarJugador(event) {
             event.preventDefault();
             
+            const btn = document.getElementById('btnAgregarJugador');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+            
             const nombre = document.getElementById('nombreJugador').value;
             const rama = document.getElementById('ramaJugador').value;
             const categoriasSelect = document.getElementById('categoriaJugador');
-            const categorias = Array.from(categoriasSelect.selectedOptions).map(opt => opt.value);
+            const categorias = Array.from(categoriasSelect.selectedOptions).map(opt => opt.value).join(',');
             const dorsal = document.getElementById('dorsalJugador').value;
             const posicionesSelect = document.getElementById('posicionJugador');
-            const posiciones = Array.from(posicionesSelect.selectedOptions).map(opt => opt.value);
+            const posiciones = Array.from(posicionesSelect.selectedOptions).map(opt => opt.value).join(',');
             
-            const jugador = {
-                id: Date.now(),
-                nombre,
-                rama,
-                categorias,
-                dorsal,
-                posiciones
-            };
+            try {
+                const url = `${API_URL}?action=addJugador&nombre=${encodeURIComponent(nombre)}&rama=${encodeURIComponent(rama)}&categorias=${encodeURIComponent(categorias)}&dorsal=${encodeURIComponent(dorsal)}&posiciones=${encodeURIComponent(posiciones)}`;
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('formJugador').reset();
+                    await cargarJugadores();
+                    renderJugadores();
+                    mostrarAlerta('¡Jugador agregado correctamente!', 'success');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta('Error al agregar jugador', 'error');
+            }
             
-            jugadores.push(jugador);
-            await guardarJugadores();
-            
-            document.getElementById('formJugador').reset();
-            renderJugadores();
-            mostrarAlerta('¡Jugador agregado correctamente!', 'success');
+            btn.disabled = false;
+            btn.textContent = 'Agregar Jugador';
         }
         
         function renderJugadores() {
             const container = document.getElementById('jugadoresList');
             container.innerHTML = '';
+            
+            if (jugadores.length === 0) {
+                container.innerHTML = '<p style="text-align:center; padding:40px; color:#666;">No hay jugadores cargados aún.</p>';
+                return;
+            }
             
             jugadores.forEach(jugador => {
                 const card = document.createElement('div');
@@ -628,13 +675,12 @@
         }
         
         function abrirPerfilJugador(jugadorId) {
-            const jugador = jugadores.find(j => j.id === jugadorId);
+            const jugador = jugadores.find(j => j.id == jugadorId);
             if (!jugador) return;
             
-            const statsJugador = estadisticas.filter(e => e.jugadorId === jugadorId);
+            const statsJugador = estadisticas.filter(e => e.jugadorId == jugadorId);
             const esLibero = jugador.posiciones.length === 1 && jugador.posiciones[0] === 'Líbero';
             
-            // Calcular estadísticas globales
             const statsGlobales = calcularEstadisticasGlobales(statsJugador, esLibero);
             
             const modal = document.getElementById('modalJugador');
@@ -659,7 +705,6 @@
             
             modal.classList.add('active');
             
-            // Dibujar gráfico global
             setTimeout(() => {
                 dibujarGraficoRadar('graficoGlobal', statsGlobales, esLibero);
                 renderPartidosJugador(jugadorId, esLibero);
@@ -682,17 +727,17 @@
             
             const totales = stats.reduce((acc, stat) => {
                 if (!esLibero) {
-                    acc.saqueFav += stat.saqueFavorable || 0;
-                    acc.saqueFall += stat.saqueFallado || 0;
-                    acc.ataqueFav += stat.ataqueFavorable || 0;
-                    acc.ataqueFall += stat.ataqueFallado || 0;
-                    acc.bloqueoFav += stat.bloqueoFavorable || 0;
-                    acc.bloqueoFall += stat.bloqueoFallado || 0;
+                    acc.saqueFav += parseInt(stat.saqueFavorable) || 0;
+                    acc.saqueFall += parseInt(stat.saqueFallado) || 0;
+                    acc.ataqueFav += parseInt(stat.ataqueFavorable) || 0;
+                    acc.ataqueFall += parseInt(stat.ataqueFallado) || 0;
+                    acc.bloqueoFav += parseInt(stat.bloqueoFavorable) || 0;
+                    acc.bloqueoFall += parseInt(stat.bloqueoFallado) || 0;
                 }
-                acc.armadoFav += stat.armadoFavorable || 0;
-                acc.armadoFall += stat.armadoFallado || 0;
-                acc.recepPos += (stat.recepcionDoblePositiva || 0) + (stat.recepcionPositiva || 0);
-                acc.recepNeg += (stat.recepcionNegativa || 0) + (stat.recepcionNegativaJuego || 0);
+                acc.armadoFav += parseInt(stat.armadoFavorable) || 0;
+                acc.armadoFall += parseInt(stat.armadoFallado) || 0;
+                acc.recepPos += (parseInt(stat.recepcionDoblePositiva) || 0) + (parseInt(stat.recepcionPositiva) || 0);
+                acc.recepNeg += (parseInt(stat.recepcionNegativa) || 0) + (parseInt(stat.recepcionNegativaJuego) || 0);
                 return acc;
             }, {
                 saqueFav: 0, saqueFall: 0,
@@ -724,7 +769,8 @@
         }
         
         function dibujarGraficoRadar(canvasId, stats, esLibero) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
             
             const labels = esLibero ? 
                 ['Recepción', 'Armado'] :
@@ -762,7 +808,7 @@
         
         function renderPartidosJugador(jugadorId, esLibero) {
             const container = document.getElementById('partidosJugadorList');
-            const statsJugador = estadisticas.filter(e => e.jugadorId === jugadorId);
+            const statsJugador = estadisticas.filter(e => e.jugadorId == jugadorId);
             
             if (statsJugador.length === 0) {
                 container.innerHTML = '<p>No hay partidos jugados aún.</p>';
@@ -772,7 +818,7 @@
             container.innerHTML = '';
             
             statsJugador.forEach(stat => {
-                const partido = partidos.find(p => p.id === stat.partidoId);
+                const partido = partidos.find(p => p.id == stat.partidoId);
                 if (!partido) return;
                 
                 const div = document.createElement('div');
@@ -794,21 +840,21 @@
             
             const statsPartido = esLibero ? {
                 recepcion: calcularEficienciaIndividual(
-                    (stat.recepcionDoblePositiva || 0) + (stat.recepcionPositiva || 0),
-                    (stat.recepcionNegativa || 0) + (stat.recepcionNegativaJuego || 0)
+                    (parseInt(stat.recepcionDoblePositiva) || 0) + (parseInt(stat.recepcionPositiva) || 0),
+                    (parseInt(stat.recepcionNegativa) || 0) + (parseInt(stat.recepcionNegativaJuego) || 0)
                 ),
                 armado: calcularEficienciaIndividual(
-                    stat.armadoFavorable || 0,
-                    stat.armadoFallado || 0
+                    parseInt(stat.armadoFavorable) || 0,
+                    parseInt(stat.armadoFallado) || 0
                 )
             } : {
-                saque: calcularEficienciaIndividual(stat.saqueFavorable || 0, stat.saqueFallado || 0),
-                ataque: calcularEficienciaIndividual(stat.ataqueFavorable || 0, stat.ataqueFallado || 0),
-                bloqueo: calcularEficienciaIndividual(stat.bloqueoFavorable || 0, stat.bloqueoFallado || 0),
-                armado: calcularEficienciaIndividual(stat.armadoFavorable || 0, stat.armadoFallado || 0),
+                saque: calcularEficienciaIndividual(parseInt(stat.saqueFavorable) || 0, parseInt(stat.saqueFallado) || 0),
+                ataque: calcularEficienciaIndividual(parseInt(stat.ataqueFavorable) || 0, parseInt(stat.ataqueFallado) || 0),
+                bloqueo: calcularEficienciaIndividual(parseInt(stat.bloqueoFavorable) || 0, parseInt(stat.bloqueoFallado) || 0),
+                armado: calcularEficienciaIndividual(parseInt(stat.armadoFavorable) || 0, parseInt(stat.armadoFallado) || 0),
                 recepcion: calcularEficienciaIndividual(
-                    (stat.recepcionDoblePositiva || 0) + (stat.recepcionPositiva || 0),
-                    (stat.recepcionNegativa || 0) + (stat.recepcionNegativaJuego || 0)
+                    (parseInt(stat.recepcionDoblePositiva) || 0) + (parseInt(stat.recepcionPositiva) || 0),
+                    (parseInt(stat.recepcionNegativa) || 0) + (parseInt(stat.recepcionNegativaJuego) || 0)
                 )
             };
             
@@ -877,33 +923,45 @@
         async function crearPartido(event) {
             event.preventDefault();
             
+            const btn = document.getElementById('btnCrearPartido');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+            
             const rival = document.getElementById('rivalPartido').value;
             const fecha = document.getElementById('fechaPartido').value;
             const rama = document.getElementById('ramaPartido').value;
             const categoria = document.getElementById('categoriaPartido').value;
             const local = document.getElementById('localPartido').value;
             
-            const partido = {
-                id: Date.now(),
-                rival,
-                fecha,
-                rama,
-                categoria,
-                local
-            };
+            try {
+                const url = `${API_URL}?action=addPartido&rival=${encodeURIComponent(rival)}&fecha=${encodeURIComponent(fecha)}&rama=${encodeURIComponent(rama)}&categoria=${encodeURIComponent(categoria)}&local=${encodeURIComponent(local)}`;
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('formPartido').reset();
+                    await cargarPartidos();
+                    renderPartidos();
+                    cargarPartidosSelect();
+                    mostrarAlerta('¡Partido creado correctamente!', 'success');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta('Error al crear partido', 'error');
+            }
             
-            partidos.push(partido);
-            await guardarPartidos();
-            
-            document.getElementById('formPartido').reset();
-            renderPartidos();
-            cargarPartidosSelect();
-            mostrarAlerta('¡Partido creado correctamente!', 'success');
+            btn.disabled = false;
+            btn.textContent = 'Crear Partido';
         }
         
         function renderPartidos() {
             const container = document.getElementById('partidosList');
             container.innerHTML = '';
+            
+            if (partidos.length === 0) {
+                container.innerHTML = '<p style="text-align:center; padding:40px; color:#666;">No hay partidos cargados aún.</p>';
+                return;
+            }
             
             partidos.forEach(partido => {
                 const card = document.createElement('div');
@@ -936,17 +994,16 @@
         }
         
         function cargarJugadoresPartido() {
-            const partidoId = parseInt(document.getElementById('partidoEstadisticas').value);
+            const partidoId = document.getElementById('partidoEstadisticas').value;
             const select = document.getElementById('jugadorEstadisticas');
             
             select.innerHTML = '<option value="">Seleccionar jugador...</option>';
             
             if (!partidoId) return;
             
-            const partido = partidos.find(p => p.id === partidoId);
+            const partido = partidos.find(p => p.id == partidoId);
             if (!partido) return;
             
-            // Filtrar jugadores que coincidan con la rama y categoría del partido
             const jugadoresFiltrados = jugadores.filter(j => 
                 j.rama === partido.rama && j.categorias.includes(partido.categoria)
             );
@@ -963,43 +1020,51 @@
         async function guardarEstadisticas(event) {
             event.preventDefault();
             
-            const partidoId = parseInt(document.getElementById('partidoEstadisticas').value);
-            const jugadorId = parseInt(document.getElementById('jugadorEstadisticas').value);
+            const btn = document.getElementById('btnGuardarEstadisticas');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
             
-            // Verificar si ya existen estadísticas para este jugador en este partido
-            const indiceExistente = estadisticas.findIndex(
-                e => e.partidoId === partidoId && e.jugadorId === jugadorId
+            const partidoId = document.getElementById('partidoEstadisticas').value;
+            const jugadorId = document.getElementById('jugadorEstadisticas').value;
+            
+            const existeEstadistica = estadisticas.find(
+                e => e.partidoId == partidoId && e.jugadorId == jugadorId
             );
             
-            const stat = {
-                partidoId,
-                jugadorId,
-                saqueFavorable: parseInt(document.getElementById('saqueFavorable').value) || 0,
-                saqueFallado: parseInt(document.getElementById('saqueFallado').value) || 0,
-                ataqueFavorable: parseInt(document.getElementById('ataqueFavorable').value) || 0,
-                ataqueFallado: parseInt(document.getElementById('ataqueFallado').value) || 0,
-                bloqueoFavorable: parseInt(document.getElementById('bloqueoFavorable').value) || 0,
-                bloqueoFallado: parseInt(document.getElementById('bloqueoFallado').value) || 0,
-                armadoFavorable: parseInt(document.getElementById('armadoFavorable').value) || 0,
-                armadoFallado: parseInt(document.getElementById('armadoFallado').value) || 0,
-                recepcionDoblePositiva: parseInt(document.getElementById('recepcionDoblePositiva').value) || 0,
-                recepcionPositiva: parseInt(document.getElementById('recepcionPositiva').value) || 0,
-                recepcionNegativa: parseInt(document.getElementById('recepcionNegativa').value) || 0,
-                recepcionNegativaJuego: parseInt(document.getElementById('recepcionNegativaJuego').value) || 0
-            };
+            const params = new URLSearchParams({
+                action: existeEstadistica ? 'updateEstadistica' : 'addEstadistica',
+                partidoId: partidoId,
+                jugadorId: jugadorId,
+                saqueFavorable: document.getElementById('saqueFavorable').value || 0,
+                saqueFallado: document.getElementById('saqueFallado').value || 0,
+                ataqueFavorable: document.getElementById('ataqueFavorable').value || 0,
+                ataqueFallado: document.getElementById('ataqueFallado').value || 0,
+                bloqueoFavorable: document.getElementById('bloqueoFavorable').value || 0,
+                bloqueoFallado: document.getElementById('bloqueoFallado').value || 0,
+                armadoFavorable: document.getElementById('armadoFavorable').value || 0,
+                armadoFallado: document.getElementById('armadoFallado').value || 0,
+                recepcionDoblePositiva: document.getElementById('recepcionDoblePositiva').value || 0,
+                recepcionPositiva: document.getElementById('recepcionPositiva').value || 0,
+                recepcionNegativa: document.getElementById('recepcionNegativa').value || 0,
+                recepcionNegativaJuego: document.getElementById('recepcionNegativaJuego').value || 0
+            });
             
-            if (indiceExistente >= 0) {
-                estadisticas[indiceExistente] = stat;
-                mostrarAlerta('¡Estadísticas actualizadas correctamente!', 'success');
-            } else {
-                estadisticas.push(stat);
-                mostrarAlerta('¡Estadísticas guardadas correctamente!', 'success');
+            try {
+                const response = await fetch(`${API_URL}?${params.toString()}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    await cargarEstadisticas();
+                    document.getElementById('formEstadisticas').reset();
+                    mostrarAlerta(existeEstadistica ? '¡Estadísticas actualizadas correctamente!' : '¡Estadísticas guardadas correctamente!', 'success');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta('Error al guardar estadísticas', 'error');
             }
             
-            await guardarEstadisticasDB();
-            
-            // Resetear formulario
-            document.getElementById('formEstadisticas').reset();
+            btn.disabled = false;
+            btn.textContent = 'Guardar Estadísticas';
         }
         
         // UTILIDADES
@@ -1020,7 +1085,6 @@
             }, 3000);
         }
         
-        // Cerrar modal al hacer click fuera
         document.getElementById('modalJugador').addEventListener('click', function(e) {
             if (e.target === this) {
                 cerrarModal();

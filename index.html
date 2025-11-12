@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estadísticas Voley</title>
+    <title> Ateneo Voley</title>
     <style>
         * {
             margin: 0;
@@ -777,4 +777,164 @@
             const centerY = canvas.height / 2;
             const radius = 150;
             
-            const labels
+            const labels = ['Saque', 'Ataque', 'Bloqueo', 'Armado', 'Recepción'];
+            const data = [
+                stats.saque,
+                stats.ataque,
+                stats.bloqueo,
+                stats.armado,
+                stats.recepcion
+            ];
+            
+            // Limpiar canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Dibujar círculos de fondo
+            ctx.strokeStyle = '#e9ecef';
+            ctx.lineWidth = 2;
+            for (let i = 1; i <= 5; i++) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, (radius / 5) * i, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // Dibujar líneas desde el centro
+            ctx.strokeStyle = '#dee2e6';
+            ctx.lineWidth = 1;
+            labels.forEach((_, i) => {
+                const angle = (Math.PI * 2 / labels.length) * i - Math.PI / 2;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            });
+            
+            // Dibujar etiquetas
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            labels.forEach((label, i) => {
+                const angle = (Math.PI * 2 / labels.length) * i - Math.PI / 2;
+                const x = centerX + Math.cos(angle) * (radius + 30);
+                const y = centerY + Math.sin(angle) * (radius + 30);
+                ctx.fillText(label, x, y);
+            });
+            
+            // Dibujar polígono de datos
+            ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            
+            ctx.beginPath();
+            data.forEach((value, i) => {
+                const angle = (Math.PI * 2 / data.length) * i - Math.PI / 2;
+                const distance = (value / 100) * radius;
+                const x = centerX + Math.cos(angle) * distance;
+                const y = centerY + Math.sin(angle) * distance;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Dibujar puntos
+            ctx.fillStyle = '#667eea';
+            data.forEach((value, i) => {
+                const angle = (Math.PI * 2 / data.length) * i - Math.PI / 2;
+                const distance = (value / 100) * radius;
+                const x = centerX + Math.cos(angle) * distance;
+                const y = centerY + Math.sin(angle) * distance;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        
+        function showMatchStats(matchId, playerId) {
+            const match = matches.find(m => m.id === matchId);
+            const stat = stats.find(s => s.matchId === matchId && s.playerId === playerId);
+            
+            if (!stat) {
+                alert('No hay estadísticas cargadas para este partido');
+                return;
+            }
+            
+            const statsHtml = `
+                <div style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                    <h3 style="margin-bottom: 15px;">${match.rival} - ${new Date(match.date).toLocaleDateString('es-AR')}</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="label">Saque Fav</div>
+                            <div class="value">${stat.saque_fav}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">Saque Fall</div>
+                            <div class="value">${stat.saque_fall}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">Ataque Fav</div>
+                            <div class="value">${stat.ataque_fav}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">Ataque Fall</div>
+                            <div class="value">${stat.ataque_fall}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">Bloqueo Fav</div>
+                            <div class="value">${stat.bloqueo_fav}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">Bloqueo Fall</div>
+                            <div class="value">${stat.bloqueo_fall}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">Armado Fav</div>
+                            <div class="value">${stat.armado_fav}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">Armado Fall</div>
+                            <div class="value">${stat.armado_fall}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">Rec Doble Pos</div>
+                            <div class="value">${stat.rec_doble_pos}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">Rec Positiva</div>
+                            <div class="value">${stat.rec_pos}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">Rec Negativa</div>
+                            <div class="value">${stat.rec_neg}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">Rec Neg Juego</div>
+                            <div class="value">${stat.rec_neg_juego}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const matchList = document.getElementById('modalMatchesList');
+            const existingStats = matchList.querySelector('[style*="margin-top: 20px"]');
+            if (existingStats) {
+                existingStats.remove();
+            }
+            matchList.insertAdjacentHTML('beforeend', statsHtml);
+        }
+        
+        // Cargar datos al iniciar
+        displayPlayers();
+        displayMatches();
+    </script>
+</body>
+</html>

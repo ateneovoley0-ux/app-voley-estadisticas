@@ -160,11 +160,42 @@
             background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
         }
         
+        /* Estilos para agrupación por rama y categoría */
+        .rama-grupo {
+            margin-bottom: 40px;
+        }
+        
+        .rama-titulo {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .categoria-grupo {
+            margin-bottom: 30px;
+        }
+        
+        .categoria-titulo {
+            background: #f8f9fa;
+            padding: 12px 20px;
+            border-left: 4px solid #667eea;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
         .jugadores-list, .partidos-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 20px;
-            margin-top: 30px;
         }
         
         .jugador-card, .partido-card {
@@ -338,6 +369,13 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        .empty-message {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -405,7 +443,7 @@
                     <button type="button" class="btn btn-danger" id="btnCancelarEdit" onclick="cancelarEdicion()" style="display:none;">Cancelar</button>
                 </form>
                 
-                <div id="jugadoresList" class="jugadores-list">
+                <div id="jugadoresList">
                     <div class="loading">
                         <div class="spinner"></div>
                         <p>Cargando jugadores...</p>
@@ -573,6 +611,15 @@
         let estadisticas = [];
         let editandoJugador = false;
         
+        // Jerarquía de categorías (de menor a mayor)
+        const jerarquiaCategorias = {
+            'SUB 14': 0,
+            'SUB 16': 1,
+            'SUB 18': 2,
+            'SUB 21': 3,
+            'Mayores': 4
+        };
+        
         window.addEventListener('load', async () => {
             await cargarTodosLosDatos();
         });
@@ -616,6 +663,20 @@
                 console.error('Error cargando estadísticas:', error);
                 mostrarAlerta('Error al cargar estadísticas', 'error');
             }
+        }
+        
+        // Función auxiliar para verificar si un jugador puede jugar en una categoría
+        function puedeJugarEnCategoria(jugador, categoriaPartido) {
+            // Un jugador puede jugar en su categoría o en categorías superiores
+            const categoriasJugador = jugador.categorias;
+            
+            for (let catJugador of categoriasJugador) {
+                if (jerarquiaCategorias[catJugador] <= jerarquiaCategorias[categoriaPartido]) {
+                    return true;
+                }
+            }
+            
+            return false;
         }
         
         function switchTab(tabName) {
@@ -741,24 +802,73 @@
                 return;
             }
             
+            // Agrupar jugadores por rama
+            const jugadoresPorRama = {
+                'Masculino': [],
+                'Femenino': []
+            };
+            
             jugadores.forEach(jugador => {
-                const card = document.createElement('div');
-                card.className = 'jugador-card';
+                jugadoresPorRama[jugador.rama].push(jugador);
+            });
+            
+            // Renderizar cada rama
+            ['Masculino', 'Femenino'].forEach(rama => {
+                if (jugadoresPorRama[rama].length === 0) return;
                 
-                card.innerHTML = `
-                    <h3 onclick="abrirPerfilJugador(${jugador.id})">#${jugador.dorsal} ${jugador.nombre}</h3>
-                    <div class="jugador-info">
-                        <p><strong>Rama:</strong> ${jugador.rama}</p>
-                        <p><strong>Categorías:</strong> ${jugador.categorias.join(', ')}</p>
-                        <p><strong>Posiciones:</strong> ${jugador.posiciones.join(', ')}</p>
-                    </div>
-                    <div class="card-actions">
-                        <button class="btn btn-small btn-warning" onclick="editarJugador(${jugador.id})">✏️ Editar</button>
-                        <button class="btn btn-small btn-danger" onclick="eliminarJugador(${jugador.id})">🗑️ Borrar</button>
-                    </div>
-                `;
+                const ramaDiv = document.createElement('div');
+                ramaDiv.className = 'rama-grupo';
                 
-                container.appendChild(card);
+                const ramaTitulo = document.createElement('div');
+                ramaTitulo.className = 'rama-titulo';
+                ramaTitulo.innerHTML = `${rama === 'Masculino' ? '👨' : '👩'} ${rama.toUpperCase()}`;
+                ramaDiv.appendChild(ramaTitulo);
+                
+                // Agrupar jugadores de esta rama por categoría
+                const categorias = ['SUB 14', 'SUB 16', 'SUB 18', 'SUB 21', 'Mayores'];
+                
+                categorias.forEach(categoria => {
+                    const jugadoresCategoria = jugadoresPorRama[rama].filter(j => 
+                        j.categorias.includes(categoria)
+                    );
+                    
+                    if (jugadoresCategoria.length === 0) return;
+                    
+                    const categoriaDiv = document.createElement('div');
+                    categoriaDiv.className = 'categoria-grupo';
+                    
+                    const categoriaTitulo = document.createElement('div');
+                    categoriaTitulo.className = 'categoria-titulo';
+                    categoriaTitulo.textContent = categoria;
+                    categoriaDiv.appendChild(categoriaTitulo);
+                    
+                    const jugadoresList = document.createElement('div');
+                    jugadoresList.className = 'jugadores-list';
+                    
+                    jugadoresCategoria.forEach(jugador => {
+                        const card = document.createElement('div');
+                        card.className = 'jugador-card';
+                        
+                        card.innerHTML = `
+                            <h3 onclick="abrirPerfilJugador(${jugador.id})">#${jugador.dorsal} ${jugador.nombre}</h3>
+                            <div class="jugador-info">
+                                <p><strong>Categorías:</strong> ${jugador.categorias.join(', ')}</p>
+                                <p><strong>Posiciones:</strong> ${jugador.posiciones.join(', ')}</p>
+                            </div>
+                            <div class="card-actions">
+                                <button class="btn btn-small btn-warning" onclick="editarJugador(${jugador.id})">✏️ Editar</button>
+                                <button class="btn btn-small btn-danger" onclick="eliminarJugador(${jugador.id})">🗑️ Borrar</button>
+                            </div>
+                        `;
+                        
+                        jugadoresList.appendChild(card);
+                    });
+                    
+                    categoriaDiv.appendChild(jugadoresList);
+                    ramaDiv.appendChild(categoriaDiv);
+                });
+                
+                container.appendChild(ramaDiv);
             });
         }
         
@@ -1116,8 +1226,10 @@
             const partido = partidos.find(p => p.id == partidoId);
             if (!partido) return;
             
+            // Filtrar jugadores que pueden jugar en este partido
+            // Deben coincidir en rama y poder jugar en la categoría (misma o inferior)
             const jugadoresFiltrados = jugadores.filter(j => 
-                j.rama === partido.rama && j.categorias.includes(partido.categoria)
+                j.rama === partido.rama && puedeJugarEnCategoria(j, partido.categoria)
             );
             
             jugadoresFiltrados.forEach(jugador => {

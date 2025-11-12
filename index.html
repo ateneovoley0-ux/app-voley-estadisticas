@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas Voley</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .tab:hover {
+            background: #e9ecef;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .card {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        .card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .player-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            cursor: pointer;
+        }
+        
+        .player-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .player-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .player-info p {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-item .label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .stat-item .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .radar-container {
+            width: 100%;
+            height: 400px;
+            margin: 30px 0;
+        }
+        
+        canvas {
+            max-width: 100%;
+        }
+        
+        .match-list {
+            margin-top: 20px;
+        }
+        
+        .match-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .match-item:hover {
+            background: #e9ecef;
+        }
+        
+        .stat-input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 10px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Estadísticas de Voley</h1>
+            <p>Gestión completa de tu equipo</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('jugadores')">Jugadores</button>
+            <button class="tab" onclick="switchTab('partidos')">Partidos</button>
+            <button class="tab" onclick="switchTab('estadisticas')">Estadísticas</button>
+        </div>
+        
+        <div class="content">
+            <!-- TAB JUGADORES -->
+            <div id="jugadores" class="tab-content active">
+                <h2 style="margin-bottom: 20px;">Gestionar Jugadores</h2>
+                
+                <div class="card">
+                    <h3 style="margin-bottom: 20px;">Agregar Nuevo Jugador</h3>
+                    <div class="form-group">
+                        <label>Nombre y Apellido</label>
+                        <input type="text" id="playerName" placeholder="Ej: Juan Pérez">
+                    </div>
+                    <div class="form-group">
+                        <label>Rama</label>
+                        <select id="playerRama">
+                            <option value="">Seleccionar...</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría</label>
+                        <input type="text" id="playerCategoria" placeholder="Ej: Sub-18, Primera, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label>Dorsal</label>
+                        <input type="number" id="playerDorsal" placeholder="Ej: 10">
+                    </div>
+                    <div class="form-group">
+                        <label>Posición</label>
+                        <select id="playerPosicion">
+                            <option value="">Seleccionar...</option>
+                            <option value="Armador">Armador</option>
+                            <option value="Central">Central</option>
+                            <option value="Punta">Punta</option>
+                            <option value="Opuesto">Opuesto</option>
+                            <option value="Líbero">Líbero</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="addPlayer()">Agregar Jugador</button>
+                </div>
+                
+                <h3 style="margin: 30px 0 20px 0;">Lista de Jugadores</h3>
+                <div id="playersList"></div>
+            </div>
+            
+            <!-- TAB PARTIDOS -->
+            <div id="partidos" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Gestionar Partidos</h2>
+                
+                <div class="card">
+                    <h3 style="margin-bottom: 20px;">Crear Nuevo Partido</h3>
+                    <div class="form-group">
+                        <label>Rival</label>
+                        <input type="text" id="matchRival" placeholder="Ej: Club Atlético">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="matchDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Local/Visitante</label>
+                        <select id="matchLocation">
+                            <option value="Local">Local</option>
+                            <option value="Visitante">Visitante</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="addMatch()">Crear Partido</button>
+                </div>
+                
+                <h3 style="margin: 30px 0 20px 0;">Partidos Programados</h3>
+                <div id="matchesList"></div>
+            </div>
+            
+            <!-- TAB ESTADÍSTICAS -->
+            <div id="estadisticas" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Cargar Estadísticas</h2>
+                
+                <div class="form-group">
+                    <label>Seleccionar Partido</label>
+                    <select id="statsMatchSelect" onchange="loadMatchPlayers()">
+                        <option value="">Seleccionar partido...</option>
+                    </select>
+                </div>
+                
+                <div id="statsPlayerSelect" style="display: none;">
+                    <div class="form-group">
+                        <label>Seleccionar Jugador</label>
+                        <select id="statsPlayerDropdown" onchange="showStatsForm()">
+                            <option value="">Seleccionar jugador...</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="statsForm" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para ver perfil de jugador -->
+    <div id="playerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalPlayerName"></h2>
+                <button class="close-btn" onclick="closePlayerModal()">&times;</button>
+            </div>
+            <div id="modalPlayerInfo"></div>
+            <div class="radar-container">
+                <canvas id="radarChart"></canvas>
+            </div>
+            <h3 style="margin: 30px 0 20px 0;">Partidos Jugados</h3>
+            <div id="modalMatchesList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Base de datos en memoria
+        let players = [];
+        let matches = [];
+        let stats = [];
+        
+        // Cambiar de pestaña
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            if (tabName === 'estadisticas') {
+                loadMatchesForStats();
+            }
+        }
+        
+        // JUGADORES
+        function addPlayer() {
+            const name = document.getElementById('playerName').value;
+            const rama = document.getElementById('playerRama').value;
+            const categoria = document.getElementById('playerCategoria').value;
+            const dorsal = document.getElementById('playerDorsal').value;
+            const posicion = document.getElementById('playerPosicion').value;
+            
+            if (!name || !rama || !categoria || !dorsal || !posicion) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+            
+            const player = {
+                id: Date.now(),
+                name,
+                rama,
+                categoria,
+                dorsal: parseInt(dorsal),
+                posicion
+            };
+            
+            players.push(player);
+            displayPlayers();
+            
+            // Limpiar formulario
+            document.getElementById('playerName').value = '';
+            document.getElementById('playerRama').value = '';
+            document.getElementById('playerCategoria').value = '';
+            document.getElementById('playerDorsal').value = '';
+            document.getElementById('playerPosicion').value = '';
+        }
+        
+        function displayPlayers() {
+            const container = document.getElementById('playersList');
+            
+            if (players.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No hay jugadores registrados</h3><p>Agrega tu primer jugador usando el formulario</p></div>';
+                return;
+            }
+            
+            container.innerHTML = players.map(player => `
+                <div class="card player-card" onclick="openPlayerModal(${player.id})">
+                    <div class="player-photo">${player.dorsal}</div>
+                    <div class="player-info" style="flex: 1;">
+                        <h3>${player.name}</h3>
+                        <p>${player.posicion} | Dorsal ${player.dorsal} | ${player.rama} | ${player.categoria}</p>
+                    </div>
+                    <button class="btn btn-danger" onclick="event.stopPropagation(); deletePlayer(${player.id})">Eliminar</button>
+                </div>
+            `).join('');
+        }
+        
+        function deletePlayer(id) {
+            if (confirm('¿Estás seguro de eliminar este jugador?')) {
+                players = players.filter(p => p.id !== id);
+                stats = stats.filter(s => s.playerId !== id);
+                displayPlayers();
+            }
+        }
+        
+        // PARTIDOS
+        function addMatch() {
+            const rival = document.getElementById('matchRival').value;
+            const date = document.getElementById('matchDate').value;
+            const location = document.getElementById('matchLocation').value;
+            
+            if (!rival || !date) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+            
+            const match = {
+                id: Date.now(),
+                rival,
+                date,
+                location
+            };
+            
+            matches.push(match);
+            displayMatches();
+            
+            document.getElementById('matchRival').value = '';
+            document.getElementById('matchDate').value = '';
+        }
+        
+        function displayMatches() {
+            const container = document.getElementById('matchesList');
+            
+            if (matches.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No hay partidos programados</h3><p>Crea tu primer partido usando el formulario</p></div>';
+                return;
+            }
+            
+            container.innerHTML = matches.map(match => `
+                <div class="card">
+                    <h3>${match.rival}</h3>
+                    <p>${new Date(match.date).toLocaleDateString('es-AR')} | ${match.location}</p>
+                    <button class="btn btn-danger" onclick="deleteMatch(${match.id})">Eliminar</button>
+                </div>
+            `).join('');
+        }
+        
+        function deleteMatch(id) {
+            if (confirm('¿Estás seguro de eliminar este partido?')) {
+                matches = matches.filter(m => m.id !== id);
+                stats = stats.filter(s => s.matchId !== id);
+                displayMatches();
+            }
+        }
+        
+        // ESTADÍSTICAS
+        function loadMatchesForStats() {
+            const select = document.getElementById('statsMatchSelect');
+            select.innerHTML = '<option value="">Seleccionar partido...</option>' + 
+                matches.map(m => `<option value="${m.id}">${m.rival} - ${new Date(m.date).toLocaleDateString('es-AR')}</option>`).join('');
+        }
+        
+        function loadMatchPlayers() {
+            const matchId = document.getElementById('statsMatchSelect').value;
+            if (!matchId) {
+                document.getElementById('statsPlayerSelect').style.display = 'none';
+                document.getElementById('statsForm').style.display = 'none';
+                return;
+            }
+            
+            const select = document.getElementById('statsPlayerDropdown');
+            select.innerHTML = '<option value="">Seleccionar jugador...</option>' +
+                players.map(p => `<option value="${p.id}">${p.name} (#${p.dorsal})</option>`).join('');
+            
+            document.getElementById('statsPlayerSelect').style.display = 'block';
+            document.getElementById('statsForm').style.display = 'none';
+        }
+        
+        function showStatsForm() {
+            const playerId = document.getElementById('statsPlayerDropdown').value;
+            if (!playerId) {
+                document.getElementById('statsForm').style.display = 'none';
+                return;
+            }
+            
+            const matchId = parseInt(document.getElementById('statsMatchSelect').value);
+            const existingStat = stats.find(s => s.playerId === parseInt(playerId) && s.matchId === matchId);
+            
+            const form = document.getElementById('statsForm');
+            form.style.display = 'block';
+            form.innerHTML = `
+                <h3 style="margin: 20px 0;">Cargar Estadísticas</h3>
+                <div class="stat-input-grid">
+                    <div class="form-group">
+                        <label>Saque Favorable</label>
+                        <input type="number" id="stat_saque_fav" value="${existingStat?.saque_fav || 0}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Saque Fallado</label>
+                        <input type="number" id="stat_saque_fall" value="${existingStat?.saque_fall || 0}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Ataque Favorable</label>
+                        <input type="number" id="stat_ataque_fav" value="${existingStat?.ataque_fav || 0}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Ataque Fallado</label>
+                        <input type="number" id="stat_ataque_fall" value="${existingStat?.ataque_fall || 0}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Bloqueo Favorable</label>
+                        <input type="number" id="stat_bloqueo_fav" value="${existingStat?.bloqueo_fav || 0}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Bloqueo Fallado</label>
+                        <input type="number" id="stat_bloqueo_fall" value="${existingStat?.bloqueo_fall || 0}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Armado Favorable</label>
+                        <input type="number" id="stat_armado_fav" value="${existingStat?.armado_fav || 0}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Armado Fallado</label>
+                        <input type="number" id="stat_armado_fall" value="${existingStat?.armado_fall || 0}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Recepción Doble Positiva</label>
+                        <input type="number" id="stat_rec_doble_pos" value="${existingStat?.rec_doble_pos || 0}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Recepción Positiva</label>
+                        <input type="number" id="stat_rec_pos" value="${existingStat?.rec_pos || 0}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Recepción Negativa</label>
+                        <input type="number" id="stat_rec_neg" value="${existingStat?.rec_neg || 0}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Recepción Negativa de Juego</label>
+                        <input type="number" id="stat_rec_neg_juego" value="${existingStat?.rec_neg_juego || 0}" min="0">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveStats()">Guardar Estadísticas</button>
+            `;
+        }
+        
+        function saveStats() {
+            const matchId = parseInt(document.getElementById('statsMatchSelect').value);
+            const playerId = parseInt(document.getElementById('statsPlayerDropdown').value);
+            
+            const stat = {
+                matchId,
+                playerId,
+                saque_fav: parseInt(document.getElementById('stat_saque_fav').value) || 0,
+                saque_fall: parseInt(document.getElementById('stat_saque_fall').value) || 0,
+                ataque_fav: parseInt(document.getElementById('stat_ataque_fav').value) || 0,
+                ataque_fall: parseInt(document.getElementById('stat_ataque_fall').value) || 0,
+                bloqueo_fav: parseInt(document.getElementById('stat_bloqueo_fav').value) || 0,
+                bloqueo_fall: parseInt(document.getElementById('stat_bloqueo_fall').value) || 0,
+                armado_fav: parseInt(document.getElementById('stat_armado_fav').value) || 0,
+                armado_fall: parseInt(document.getElementById('stat_armado_fall').value) || 0,
+                rec_doble_pos: parseInt(document.getElementById('stat_rec_doble_pos').value) || 0,
+                rec_pos: parseInt(document.getElementById('stat_rec_pos').value) || 0,
+                rec_neg: parseInt(document.getElementById('stat_rec_neg').value) || 0,
+                rec_neg_juego: parseInt(document.getElementById('stat_rec_neg_juego').value) || 0
+            };
+            
+            // Actualizar o agregar
+            const existingIndex = stats.findIndex(s => s.playerId === playerId && s.matchId === matchId);
+            if (existingIndex >= 0) {
+                stats[existingIndex] = stat;
+            } else {
+                stats.push(stat);
+            }
+            
+            alert('¡Estadísticas guardadas correctamente!');
+        }
+        
+        // MODAL DE JUGADOR
+        function openPlayerModal(playerId) {
+            const player = players.find(p => p.id === playerId);
+            if (!player) return;
+            
+            document.getElementById('modalPlayerName').textContent = player.name;
+            document.getElementById('modalPlayerInfo').innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="label">Dorsal</div>
+                        <div class="value">${player.dorsal}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="label">Posición</div>
+                        <div class="value" style="font-size: 16px;">${player.posicion}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="label">Rama</div>
+                        <div class="value" style="font-size: 16px;">${player.rama}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="label">Categoría</div>
+                        <div class="value" style="font-size: 16px;">${player.categoria}</div>
+                    </div>
+                </div>
+            `;
+            
+            // Calcular estadísticas globales
+            const playerStats = stats.filter(s => s.playerId === playerId);
+            const globalStats = calculateGlobalStats(playerStats);
+            
+            // Crear gráfico de radar
+            drawRadarChart(globalStats);
+            
+            // Mostrar partidos jugados
+            const playerMatches = matches.filter(m => 
+                stats.some(s => s.matchId === m.id && s.playerId === playerId)
+            );
+            
+            document.getElementById('modalMatchesList').innerHTML = playerMatches.length === 0 
+                ? '<p style="text-align: center; color: #6c757d;">No hay partidos registrados</p>'
+                : playerMatches.map(m => {
+                    const matchStat = stats.find(s => s.matchId === m.id && s.playerId === playerId);
+                    return `
+                        <div class="match-item" onclick="showMatchStats(${m.id}, ${playerId})">
+                            <h4>${m.rival}</h4>
+                            <p>${new Date(m.date).toLocaleDateString('es-AR')} | ${m.location}</p>
+                        </div>
+                    `;
+                }).join('');
+            
+            document.getElementById('playerModal').classList.add('active');
+        }
+        
+        function closePlayerModal() {
+            document.getElementById('playerModal').classList.remove('active');
+        }
+        
+        function calculateGlobalStats(playerStats) {
+            const totals = {
+                saque: 0, ataque: 0, bloqueo: 0, armado: 0, recepcion: 0
+            };
+            
+            playerStats.forEach(s => {
+                const totalSaque = s.saque_fav + s.saque_fall;
+                totals.saque += totalSaque > 0 ? (s.saque_fav / totalSaque) * 100 : 0;
+                
+                const totalAtaque = s.ataque_fav + s.ataque_fall;
+                totals.ataque += totalAtaque > 0 ? (s.ataque_fav / totalAtaque) * 100 : 0;
+                
+                const totalBloqueo = s.bloqueo_fav + s.bloqueo_fall;
+                totals.bloqueo += totalBloqueo > 0 ? (s.bloqueo_fav / totalBloqueo) * 100 : 0;
+                
+                const totalArmado = s.armado_fav + s.armado_fall;
+                totals.armado += totalArmado > 0 ? (s.armado_fav / totalArmado) * 100 : 0;
+                
+                const totalRecepcion = s.rec_doble_pos + s.rec_pos + s.rec_neg + s.rec_neg_juego;
+                totals.recepcion += totalRecepcion > 0 ? ((s.rec_doble_pos * 2 + s.rec_pos) / (totalRecepcion * 2)) * 100 : 0;
+            });
+            
+            const count = playerStats.length || 1;
+            return {
+                saque: totals.saque / count,
+                ataque: totals.ataque / count,
+                bloqueo: totals.bloqueo / count,
+                armado: totals.armado / count,
+                recepcion: totals.recepcion / count
+            };
+        }
+        
+        function drawRadarChart(stats) {
+            const canvas = document.getElementById('radarChart');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = 400;
+            canvas.height = 400;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 150;
+            
+            const labels

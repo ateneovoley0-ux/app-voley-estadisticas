@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Ateneo Voley </title>
+    <title>Ateneo Voley</title>
     <style>
         * {
             margin: 0;
@@ -99,6 +99,10 @@
             border-radius: 8px;
             font-size: 16px;
             transition: border-color 0.3s;
+        }
+
+        .form-group select[multiple] {
+            height: 120px;
         }
         
         .form-group input:focus,
@@ -211,6 +215,9 @@
             width: 100%;
             height: 400px;
             margin: 30px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
         canvas {
@@ -274,7 +281,7 @@
             background: white;
             border-radius: 20px;
             padding: 30px;
-            max-width: 800px;
+            max-width: 900px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
@@ -294,13 +301,37 @@
             cursor: pointer;
             color: #6c757d;
         }
+
+        .match-stats-detail {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px solid #dee2e6;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .position-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>⚡ Estadísticas de Voley</h1>
-            <p>Gestión completa de tu equipo</p>
+            <h1>⚡ Ateneo Voley</h1>
+            <p>Gestión del equipo</p>
         </div>
         
         <div class="tabs">
@@ -330,16 +361,22 @@
                     </div>
                     <div class="form-group">
                         <label>Categoría</label>
-                        <input type="text" id="playerCategoria" placeholder="Ej: Sub-18, Primera, etc.">
+                        <select id="playerCategoria">
+                            <option value="">Seleccionar...</option>
+                            <option value="SUB 14">SUB 14</option>
+                            <option value="SUB 16">SUB 16</option>
+                            <option value="SUB 18">SUB 18</option>
+                            <option value="SUB 21">SUB 21</option>
+                            <option value="Mayores">Mayores</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Dorsal</label>
                         <input type="number" id="playerDorsal" placeholder="Ej: 10">
                     </div>
                     <div class="form-group">
-                        <label>Posición</label>
-                        <select id="playerPosicion">
-                            <option value="">Seleccionar...</option>
+                        <label>Posición (mantén Ctrl/Cmd para seleccionar múltiples)</label>
+                        <select id="playerPosicion" multiple>
                             <option value="Armador">Armador</option>
                             <option value="Central">Central</option>
                             <option value="Punta">Punta</option>
@@ -367,6 +404,25 @@
                     <div class="form-group">
                         <label>Fecha</label>
                         <input type="date" id="matchDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Rama</label>
+                        <select id="matchRama">
+                            <option value="">Seleccionar...</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría</label>
+                        <select id="matchCategoria">
+                            <option value="">Seleccionar...</option>
+                            <option value="SUB 14">SUB 14</option>
+                            <option value="SUB 16">SUB 16</option>
+                            <option value="SUB 18">SUB 18</option>
+                            <option value="SUB 21">SUB 21</option>
+                            <option value="Mayores">Mayores</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Local/Visitante</label>
@@ -416,7 +472,7 @@
             </div>
             <div id="modalPlayerInfo"></div>
             <div class="radar-container">
-                <canvas id="radarChart"></canvas>
+                <canvas id="radarChart" width="400" height="400"></canvas>
             </div>
             <h3 style="margin: 30px 0 20px 0;">Partidos Jugados</h3>
             <div id="modalMatchesList"></div>
@@ -428,6 +484,36 @@
         let players = [];
         let matches = [];
         let stats = [];
+        let currentPlayer = null;
+        
+        // Cargar datos al iniciar
+        async function loadData() {
+            try {
+                const playersData = localStorage.getItem('ateneo_players');
+                const matchesData = localStorage.getItem('ateneo_matches');
+                const statsData = localStorage.getItem('ateneo_stats');
+                
+                if (playersData) players = JSON.parse(playersData);
+                if (matchesData) matches = JSON.parse(matchesData);
+                if (statsData) stats = JSON.parse(statsData);
+                
+                displayPlayers();
+                displayMatches();
+            } catch (error) {
+                console.error('Error al cargar datos:', error);
+            }
+        }
+        
+        // Guardar datos
+        function saveData() {
+            try {
+                localStorage.setItem('ateneo_players', JSON.stringify(players));
+                localStorage.setItem('ateneo_matches', JSON.stringify(matches));
+                localStorage.setItem('ateneo_stats', JSON.stringify(stats));
+            } catch (error) {
+                console.error('Error al guardar datos:', error);
+            }
+        }
         
         // Cambiar de pestaña
         function switchTab(tabName) {
@@ -444,14 +530,15 @@
         
         // JUGADORES
         function addPlayer() {
-            const name = document.getElementById('playerName').value;
+            const name = document.getElementById('playerName').value.trim();
             const rama = document.getElementById('playerRama').value;
             const categoria = document.getElementById('playerCategoria').value;
             const dorsal = document.getElementById('playerDorsal').value;
-            const posicion = document.getElementById('playerPosicion').value;
+            const posicionSelect = document.getElementById('playerPosicion');
+            const posiciones = Array.from(posicionSelect.selectedOptions).map(opt => opt.value);
             
-            if (!name || !rama || !categoria || !dorsal || !posicion) {
-                alert('Por favor completa todos los campos');
+            if (!name || !rama || !categoria || !dorsal || posiciones.length === 0) {
+                alert('Por favor completa todos los campos y selecciona al menos una posición');
                 return;
             }
             
@@ -461,10 +548,11 @@
                 rama,
                 categoria,
                 dorsal: parseInt(dorsal),
-                posicion
+                posiciones
             };
             
             players.push(player);
+            saveData();
             displayPlayers();
             
             // Limpiar formulario
@@ -472,7 +560,9 @@
             document.getElementById('playerRama').value = '';
             document.getElementById('playerCategoria').value = '';
             document.getElementById('playerDorsal').value = '';
-            document.getElementById('playerPosicion').value = '';
+            posicionSelect.selectedIndex = -1;
+            
+            alert('¡Jugador agregado correctamente!');
         }
         
         function displayPlayers() {
@@ -488,7 +578,10 @@
                     <div class="player-photo">${player.dorsal}</div>
                     <div class="player-info" style="flex: 1;">
                         <h3>${player.name}</h3>
-                        <p>${player.posicion} | Dorsal ${player.dorsal} | ${player.rama} | ${player.categoria}</p>
+                        <p>
+                            ${player.posiciones.map(p => `<span class="position-badge">${p}</span>`).join('')}
+                            | Dorsal ${player.dorsal} | ${player.rama} | ${player.categoria}
+                        </p>
                     </div>
                     <button class="btn btn-danger" onclick="event.stopPropagation(); deletePlayer(${player.id})">Eliminar</button>
                 </div>
@@ -499,17 +592,20 @@
             if (confirm('¿Estás seguro de eliminar este jugador?')) {
                 players = players.filter(p => p.id !== id);
                 stats = stats.filter(s => s.playerId !== id);
+                saveData();
                 displayPlayers();
             }
         }
         
         // PARTIDOS
         function addMatch() {
-            const rival = document.getElementById('matchRival').value;
+            const rival = document.getElementById('matchRival').value.trim();
             const date = document.getElementById('matchDate').value;
+            const rama = document.getElementById('matchRama').value;
+            const categoria = document.getElementById('matchCategoria').value;
             const location = document.getElementById('matchLocation').value;
             
-            if (!rival || !date) {
+            if (!rival || !date || !rama || !categoria) {
                 alert('Por favor completa todos los campos');
                 return;
             }
@@ -518,14 +614,21 @@
                 id: Date.now(),
                 rival,
                 date,
+                rama,
+                categoria,
                 location
             };
             
             matches.push(match);
+            saveData();
             displayMatches();
             
             document.getElementById('matchRival').value = '';
             document.getElementById('matchDate').value = '';
+            document.getElementById('matchRama').value = '';
+            document.getElementById('matchCategoria').value = '';
+            
+            alert('¡Partido creado correctamente!');
         }
         
         function displayMatches() {
@@ -539,7 +642,7 @@
             container.innerHTML = matches.map(match => `
                 <div class="card">
                     <h3>${match.rival}</h3>
-                    <p>${new Date(match.date).toLocaleDateString('es-AR')} | ${match.location}</p>
+                    <p>${new Date(match.date).toLocaleDateString('es-AR')} | ${match.location} | ${match.rama} | ${match.categoria}</p>
                     <button class="btn btn-danger" onclick="deleteMatch(${match.id})">Eliminar</button>
                 </div>
             `).join('');
@@ -549,6 +652,7 @@
             if (confirm('¿Estás seguro de eliminar este partido?')) {
                 matches = matches.filter(m => m.id !== id);
                 stats = stats.filter(s => s.matchId !== id);
+                saveData();
                 displayMatches();
             }
         }
@@ -557,40 +661,47 @@
         function loadMatchesForStats() {
             const select = document.getElementById('statsMatchSelect');
             select.innerHTML = '<option value="">Seleccionar partido...</option>' + 
-                matches.map(m => `<option value="${m.id}">${m.rival} - ${new Date(m.date).toLocaleDateString('es-AR')}</option>`).join('');
+                matches.map(m => `<option value="${m.id}">${m.rival} - ${new Date(m.date).toLocaleDateString('es-AR')} - ${m.rama} ${m.categoria}</option>`).join('');
         }
         
         function loadMatchPlayers() {
-            const matchId = document.getElementById('statsMatchSelect').value;
+            const matchId = parseInt(document.getElementById('statsMatchSelect').value);
             if (!matchId) {
                 document.getElementById('statsPlayerSelect').style.display = 'none';
                 document.getElementById('statsForm').style.display = 'none';
                 return;
             }
             
+            const match = matches.find(m => m.id === matchId);
+            const filteredPlayers = players.filter(p => p.rama === match.rama && p.categoria === match.categoria);
+            
             const select = document.getElementById('statsPlayerDropdown');
             select.innerHTML = '<option value="">Seleccionar jugador...</option>' +
-                players.map(p => `<option value="${p.id}">${p.name} (#${p.dorsal})</option>`).join('');
+                filteredPlayers.map(p => `<option value="${p.id}">${p.name} (#${p.dorsal})</option>`).join('');
             
             document.getElementById('statsPlayerSelect').style.display = 'block';
             document.getElementById('statsForm').style.display = 'none';
         }
         
         function showStatsForm() {
-            const playerId = document.getElementById('statsPlayerDropdown').value;
+            const playerId = parseInt(document.getElementById('statsPlayerDropdown').value);
             if (!playerId) {
                 document.getElementById('statsForm').style.display = 'none';
                 return;
             }
             
+            const player = players.find(p => p.id === playerId);
             const matchId = parseInt(document.getElementById('statsMatchSelect').value);
-            const existingStat = stats.find(s => s.playerId === parseInt(playerId) && s.matchId === matchId);
+            const existingStat = stats.find(s => s.playerId === playerId && s.matchId === matchId);
+            
+            const isLiberoOnly = player.posiciones.length === 1 && player.posiciones[0] === 'Líbero';
             
             const form = document.getElementById('statsForm');
             form.style.display = 'block';
             form.innerHTML = `
-                <h3 style="margin: 20px 0;">Cargar Estadísticas</h3>
+                <h3 style="margin: 20px 0;">Cargar Estadísticas - ${player.name}</h3>
                 <div class="stat-input-grid">
+                    ${!isLiberoOnly ? `
                     <div class="form-group">
                         <label>Saque Favorable</label>
                         <input type="number" id="stat_saque_fav" value="${existingStat?.saque_fav || 0}" min="0">
@@ -615,6 +726,7 @@
                         <label>Bloqueo Fallado</label>
                         <input type="number" id="stat_bloqueo_fall" value="${existingStat?.bloqueo_fall || 0}" min="0">
                     </div>
+                    ` : ''}
                     <div class="form-group">
                         <label>Armado Favorable</label>
                         <input type="number" id="stat_armado_fav" value="${existingStat?.armado_fav || 0}" min="0">
@@ -640,23 +752,23 @@
                         <input type="number" id="stat_rec_neg_juego" value="${existingStat?.rec_neg_juego || 0}" min="0">
                     </div>
                 </div>
-                <button class="btn btn-primary" onclick="saveStats()">Guardar Estadísticas</button>
+                <button class="btn btn-primary" onclick="saveStats(${isLiberoOnly})">Guardar Estadísticas</button>
             `;
         }
         
-        function saveStats() {
+        function saveStats(isLiberoOnly) {
             const matchId = parseInt(document.getElementById('statsMatchSelect').value);
             const playerId = parseInt(document.getElementById('statsPlayerDropdown').value);
             
             const stat = {
                 matchId,
                 playerId,
-                saque_fav: parseInt(document.getElementById('stat_saque_fav').value) || 0,
-                saque_fall: parseInt(document.getElementById('stat_saque_fall').value) || 0,
-                ataque_fav: parseInt(document.getElementById('stat_ataque_fav').value) || 0,
-                ataque_fall: parseInt(document.getElementById('stat_ataque_fall').value) || 0,
-                bloqueo_fav: parseInt(document.getElementById('stat_bloqueo_fav').value) || 0,
-                bloqueo_fall: parseInt(document.getElementById('stat_bloqueo_fall').value) || 0,
+                saque_fav: isLiberoOnly ? 0 : (parseInt(document.getElementById('stat_saque_fav')?.value) || 0),
+                saque_fall: isLiberoOnly ? 0 : (parseInt(document.getElementById('stat_saque_fall')?.value) || 0),
+                ataque_fav: isLiberoOnly ? 0 : (parseInt(document.getElementById('stat_ataque_fav')?.value) || 0),
+                ataque_fall: isLiberoOnly ? 0 : (parseInt(document.getElementById('stat_ataque_fall')?.value) || 0),
+                bloqueo_fav: isLiberoOnly ? 0 : (parseInt(document.getElementById('stat_bloqueo_fav')?.value) || 0),
+                bloqueo_fall: isLiberoOnly ? 0 : (parseInt(document.getElementById('stat_bloqueo_fall')?.value) || 0),
                 armado_fav: parseInt(document.getElementById('stat_armado_fav').value) || 0,
                 armado_fall: parseInt(document.getElementById('stat_armado_fall').value) || 0,
                 rec_doble_pos: parseInt(document.getElementById('stat_rec_doble_pos').value) || 0,
@@ -673,268 +785,11 @@
                 stats.push(stat);
             }
             
+            saveData();
             alert('¡Estadísticas guardadas correctamente!');
         }
         
         // MODAL DE JUGADOR
         function openPlayerModal(playerId) {
             const player = players.find(p => p.id === playerId);
-            if (!player) return;
-            
-            document.getElementById('modalPlayerName').textContent = player.name;
-            document.getElementById('modalPlayerInfo').innerHTML = `
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="label">Dorsal</div>
-                        <div class="value">${player.dorsal}</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="label">Posición</div>
-                        <div class="value" style="font-size: 16px;">${player.posicion}</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="label">Rama</div>
-                        <div class="value" style="font-size: 16px;">${player.rama}</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="label">Categoría</div>
-                        <div class="value" style="font-size: 16px;">${player.categoria}</div>
-                    </div>
-                </div>
-            `;
-            
-            // Calcular estadísticas globales
-            const playerStats = stats.filter(s => s.playerId === playerId);
-            const globalStats = calculateGlobalStats(playerStats);
-            
-            // Crear gráfico de radar
-            drawRadarChart(globalStats);
-            
-            // Mostrar partidos jugados
-            const playerMatches = matches.filter(m => 
-                stats.some(s => s.matchId === m.id && s.playerId === playerId)
-            );
-            
-            document.getElementById('modalMatchesList').innerHTML = playerMatches.length === 0 
-                ? '<p style="text-align: center; color: #6c757d;">No hay partidos registrados</p>'
-                : playerMatches.map(m => {
-                    const matchStat = stats.find(s => s.matchId === m.id && s.playerId === playerId);
-                    return `
-                        <div class="match-item" onclick="showMatchStats(${m.id}, ${playerId})">
-                            <h4>${m.rival}</h4>
-                            <p>${new Date(m.date).toLocaleDateString('es-AR')} | ${m.location}</p>
-                        </div>
-                    `;
-                }).join('');
-            
-            document.getElementById('playerModal').classList.add('active');
-        }
-        
-        function closePlayerModal() {
-            document.getElementById('playerModal').classList.remove('active');
-        }
-        
-        function calculateGlobalStats(playerStats) {
-            const totals = {
-                saque: 0, ataque: 0, bloqueo: 0, armado: 0, recepcion: 0
-            };
-            
-            playerStats.forEach(s => {
-                const totalSaque = s.saque_fav + s.saque_fall;
-                totals.saque += totalSaque > 0 ? (s.saque_fav / totalSaque) * 100 : 0;
-                
-                const totalAtaque = s.ataque_fav + s.ataque_fall;
-                totals.ataque += totalAtaque > 0 ? (s.ataque_fav / totalAtaque) * 100 : 0;
-                
-                const totalBloqueo = s.bloqueo_fav + s.bloqueo_fall;
-                totals.bloqueo += totalBloqueo > 0 ? (s.bloqueo_fav / totalBloqueo) * 100 : 0;
-                
-                const totalArmado = s.armado_fav + s.armado_fall;
-                totals.armado += totalArmado > 0 ? (s.armado_fav / totalArmado) * 100 : 0;
-                
-                const totalRecepcion = s.rec_doble_pos + s.rec_pos + s.rec_neg + s.rec_neg_juego;
-                totals.recepcion += totalRecepcion > 0 ? ((s.rec_doble_pos * 2 + s.rec_pos) / (totalRecepcion * 2)) * 100 : 0;
-            });
-            
-            const count = playerStats.length || 1;
-            return {
-                saque: totals.saque / count,
-                ataque: totals.ataque / count,
-                bloqueo: totals.bloqueo / count,
-                armado: totals.armado / count,
-                recepcion: totals.recepcion / count
-            };
-        }
-        
-        function drawRadarChart(stats) {
-            const canvas = document.getElementById('radarChart');
-            const ctx = canvas.getContext('2d');
-            
-            canvas.width = 400;
-            canvas.height = 400;
-            
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            const radius = 150;
-            
-            const labels = ['Saque', 'Ataque', 'Bloqueo', 'Armado', 'Recepción'];
-            const data = [
-                stats.saque,
-                stats.ataque,
-                stats.bloqueo,
-                stats.armado,
-                stats.recepcion
-            ];
-            
-            // Limpiar canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Dibujar círculos de fondo
-            ctx.strokeStyle = '#e9ecef';
-            ctx.lineWidth = 2;
-            for (let i = 1; i <= 5; i++) {
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, (radius / 5) * i, 0, Math.PI * 2);
-                ctx.stroke();
-            }
-            
-            // Dibujar líneas desde el centro
-            ctx.strokeStyle = '#dee2e6';
-            ctx.lineWidth = 1;
-            labels.forEach((_, i) => {
-                const angle = (Math.PI * 2 / labels.length) * i - Math.PI / 2;
-                const x = centerX + Math.cos(angle) * radius;
-                const y = centerY + Math.sin(angle) * radius;
-                
-                ctx.beginPath();
-                ctx.moveTo(centerX, centerY);
-                ctx.lineTo(x, y);
-                ctx.stroke();
-            });
-            
-            // Dibujar etiquetas
-            ctx.fillStyle = '#333';
-            ctx.font = 'bold 14px sans-serif';
-            ctx.textAlign = 'center';
-            labels.forEach((label, i) => {
-                const angle = (Math.PI * 2 / labels.length) * i - Math.PI / 2;
-                const x = centerX + Math.cos(angle) * (radius + 30);
-                const y = centerY + Math.sin(angle) * (radius + 30);
-                ctx.fillText(label, x, y);
-            });
-            
-            // Dibujar polígono de datos
-            ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
-            ctx.strokeStyle = '#667eea';
-            ctx.lineWidth = 3;
-            
-            ctx.beginPath();
-            data.forEach((value, i) => {
-                const angle = (Math.PI * 2 / data.length) * i - Math.PI / 2;
-                const distance = (value / 100) * radius;
-                const x = centerX + Math.cos(angle) * distance;
-                const y = centerY + Math.sin(angle) * distance;
-                
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            });
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-            
-            // Dibujar puntos
-            ctx.fillStyle = '#667eea';
-            data.forEach((value, i) => {
-                const angle = (Math.PI * 2 / data.length) * i - Math.PI / 2;
-                const distance = (value / 100) * radius;
-                const x = centerX + Math.cos(angle) * distance;
-                const y = centerY + Math.sin(angle) * distance;
-                
-                ctx.beginPath();
-                ctx.arc(x, y, 5, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-        
-        function showMatchStats(matchId, playerId) {
-            const match = matches.find(m => m.id === matchId);
-            const stat = stats.find(s => s.matchId === matchId && s.playerId === playerId);
-            
-            if (!stat) {
-                alert('No hay estadísticas cargadas para este partido');
-                return;
-            }
-            
-            const statsHtml = `
-                <div style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
-                    <h3 style="margin-bottom: 15px;">${match.rival} - ${new Date(match.date).toLocaleDateString('es-AR')}</h3>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="label">Saque Fav</div>
-                            <div class="value">${stat.saque_fav}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="label">Saque Fall</div>
-                            <div class="value">${stat.saque_fall}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="label">Ataque Fav</div>
-                            <div class="value">${stat.ataque_fav}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="label">Ataque Fall</div>
-                            <div class="value">${stat.ataque_fall}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="label">Bloqueo Fav</div>
-                            <div class="value">${stat.bloqueo_fav}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="label">Bloqueo Fall</div>
-                            <div class="value">${stat.bloqueo_fall}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="label">Armado Fav</div>
-                            <div class="value">${stat.armado_fav}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="label">Armado Fall</div>
-                            <div class="value">${stat.armado_fall}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="label">Rec Doble Pos</div>
-                            <div class="value">${stat.rec_doble_pos}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="label">Rec Positiva</div>
-                            <div class="value">${stat.rec_pos}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="label">Rec Negativa</div>
-                            <div class="value">${stat.rec_neg}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="label">Rec Neg Juego</div>
-                            <div class="value">${stat.rec_neg_juego}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            const matchList = document.getElementById('modalMatchesList');
-            const existingStats = matchList.querySelector('[style*="margin-top: 20px"]');
-            if (existingStats) {
-                existingStats.remove();
-            }
-            matchList.insertAdjacentHTML('beforeend', statsHtml);
-        }
-        
-        // Cargar datos al iniciar
-        displayPlayers();
-        displayMatches();
-    </script>
-</body>
-</html>
+            if (!

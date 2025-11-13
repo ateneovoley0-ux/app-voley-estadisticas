@@ -857,17 +857,22 @@
             
             try {
                 const url = `${API_URL}?action=deleteJugador&id=${jugadorId}`;
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
                 const result = await response.json();
                 
                 if (result.success) {
                     await cargarJugadores();
                     renderJugadores();
                     mostrarAlerta('¡Jugador eliminado correctamente!', 'success');
+                } else {
+                    mostrarAlerta('Error: ' + (result.message || 'No se pudo eliminar el jugador'), 'error');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                mostrarAlerta('Error al eliminar jugador', 'error');
+                console.error('Error completo:', error);
+                mostrarAlerta('Error al eliminar jugador: ' + error.message, 'error');
             }
         }
         

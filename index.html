@@ -778,6 +778,12 @@
             try {
                 const response = await fetch(`${API_URL}?action=getPartidos`);
                 partidos = await response.json();
+                console.log('=== PARTIDOS CARGADOS ===');
+                console.log('Total partidos:', partidos.length);
+                if (partidos.length > 0) {
+                    console.log('Último partido:', partidos[partidos.length - 1]);
+                    console.log('JugadoresConvocados del último:', partidos[partidos.length - 1].jugadoresConvocados);
+                }
             } catch (error) {
                 console.error('Error cargando partidos:', error);
                 mostrarAlerta('Error al cargar partidos', 'error');
@@ -1426,11 +1432,16 @@
                 const card = document.createElement('div');
                 card.className = 'partido-card';
                 
-                const jugadoresConvocados = partido.jugadoresConvocados ? 
-                    partido.jugadoresConvocados.split(',').map(id => {
+                let jugadoresConvocados = 'No especificado';
+                
+                if (partido.jugadoresConvocados && partido.jugadoresConvocados !== '') {
+                    const jugadoresTexto = partido.jugadoresConvocados.split(',').map(id => {
                         const j = jugadores.find(jug => jug.id == id);
                         return j ? `#${j.dorsal} ${j.nombre}` : '';
-                    }).filter(Boolean).join(', ') : 'No especificado';
+                    }).filter(Boolean).join(', ');
+                    
+                    jugadoresConvocados = jugadoresTexto || 'No especificado';
+                }
                 
                 card.innerHTML = `
                     <h3>vs ${partido.rival}</h3>
@@ -1475,8 +1486,20 @@
             
             partidoActualStats = partidos.find(p => p.id == partidoId);
             
-            if (!partidoActualStats || !partidoActualStats.jugadoresConvocados) {
-                mostrarAlerta('Este partido no tiene jugadores convocados', 'error');
+            console.log('=== PARTIDO SELECCIONADO ===');
+            console.log('Partido completo:', partidoActualStats);
+            console.log('jugadoresConvocados:', partidoActualStats.jugadoresConvocados);
+            console.log('Tipo:', typeof partidoActualStats.jugadoresConvocados);
+            
+            if (!partidoActualStats) {
+                mostrarAlerta('Partido no encontrado', 'error');
+                return;
+            }
+            
+            if (!partidoActualStats.jugadoresConvocados || partidoActualStats.jugadoresConvocados === '') {
+                mostrarAlerta('Este partido no tiene jugadores convocados. Por favor, crea un nuevo partido seleccionando jugadores.', 'error');
+                pantallaJugadores.style.display = 'none';
+                pantallaCarga.style.display = 'none';
                 return;
             }
             
@@ -1487,10 +1510,14 @@
             container.innerHTML = '';
             
             const jugadoresIds = partidoActualStats.jugadoresConvocados.split(',');
+            console.log('IDs de jugadores:', jugadoresIds);
             
             jugadoresIds.forEach(jugadorId => {
                 const jugador = jugadores.find(j => j.id == jugadorId);
-                if (!jugador) return;
+                if (!jugador) {
+                    console.warn('Jugador no encontrado:', jugadorId);
+                    return;
+                }
                 
                 const card = document.createElement('div');
                 card.className = 'jugador-card';

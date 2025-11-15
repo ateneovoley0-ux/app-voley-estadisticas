@@ -173,7 +173,6 @@
             background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
         }
         
-        /* Estilos para agrupación por rama y categoría */
         .rama-grupo {
             margin-bottom: 40px;
         }
@@ -189,6 +188,25 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .rama-titulo:hover {
+            opacity: 0.8;
+        }
+        
+        .rama-titulo::after {
+            content: '▼';
+            position: absolute;
+            right: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .rama-titulo.collapsed::after {
+            transform: rotate(-90deg);
         }
         
         .categoria-grupo {
@@ -203,6 +221,35 @@
             font-weight: 600;
             color: #333;
             margin-bottom: 15px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .categoria-titulo:hover {
+            opacity: 0.8;
+        }
+        
+        .categoria-titulo::after {
+            content: '▼';
+            position: absolute;
+            right: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .categoria-titulo.collapsed::after {
+            transform: rotate(-90deg);
+        }
+        
+        .categoria-content, .rama-content {
+            max-height: 5000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .categoria-content.collapsed, .rama-content.collapsed {
+            max-height: 0;
         }
         
         .jugadores-list, .partidos-list {
@@ -390,46 +437,11 @@
             font-style: italic;
         }
         
-        /* Separación entre formulario y listado */
         .separador {
             margin: 50px 0 30px 0;
             border-top: 3px solid #e0e0e0;
         }
         
-        /* Estilos para colapsar/expandir */
-        .rama-titulo, .categoria-titulo {
-            cursor: pointer;
-            user-select: none;
-            position: relative;
-            transition: all 0.3s;
-        }
-        
-        .rama-titulo:hover, .categoria-titulo:hover {
-            opacity: 0.8;
-        }
-        
-        .rama-titulo::after, .categoria-titulo::after {
-            content: '▼';
-            position: absolute;
-            right: 20px;
-            transition: transform 0.3s;
-        }
-        
-        .rama-titulo.collapsed::after, .categoria-titulo.collapsed::after {
-            transform: rotate(-90deg);
-        }
-        
-        .categoria-content, .rama-content {
-            max-height: 5000px;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-        }
-        
-        .categoria-content.collapsed, .rama-content.collapsed {
-            max-height: 0;
-        }
-        
-        /* Buscador de jugadores */
         .search-box {
             margin-bottom: 15px;
             position: relative;
@@ -447,14 +459,97 @@
             color: #666;
             font-size: 1.2em;
         }
+        
+        .stat-control {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .stat-control:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .stat-control-info {
+            flex: 1;
+        }
+        
+        .stat-control-label {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .stat-control-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+            transition: transform 0.2s;
+        }
+        
+        .stat-control-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-counter {
+            width: 50px;
+            height: 50px;
+            font-size: 1.5em;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        .btn-counter:hover {
+            transform: scale(1.1);
+        }
+        
+        .btn-counter:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-minus {
+            background: linear-gradient(135deg, #f56565 0%, #c53030 100%);
+            color: white;
+        }
+        
+        .btn-plus {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+        
+        .stats-section {
+            margin-bottom: 40px;
+        }
+        
+        .stats-section-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 220'%3E%3Cdefs%3E%3Cstyle%3E.letter%7Bfont-family:Arial,sans-serif;font-weight:bold;font-size:55px;fill:%23000%7D%3C/style%3E%3C/defs%3E%3C!-- Contorno del escudo --%3E%3Cpath d='M100,10 L180,35 L180,110 Q180,170,100,210 Q20,170,20,110 L20,35 Z' fill='%23fff' stroke='%23000' stroke-width='3'/%3E%3C!-- Cuadrante superior izquierdo (AZUL) --%3E%3Cpath d='M100,35 L35,55 L35,110 L100,110 Z' fill='%2370A8D8'/%3E%3C!-- Cuadrante superior derecho (BLANCO) --%3E%3Cpath d='M100,35 L165,55 L165,110 L100,110 Z' fill='%23fff' stroke='%23ddd' stroke-width='1'/%3E%3C!-- Cuadrante inferior izquierdo (BLANCO) --%3E%3Cpath d='M100,110 L35,110 L35,150 Q50,170,100,185 Z' fill='%23fff' stroke='%23ddd' stroke-width='1'/%3E%3C!-- Cuadrante inferior derecho (AZUL) --%3E%3Cpath d='M100,110 L165,110 L165,150 Q150,170,100,185 Z' fill='%2370A8D8'/%3E%3C!-- Letra A --%3E%3Ctext x='67' y='90' class='letter' text-anchor='middle'%3EA%3C/text%3E%3C!-- Letra P --%3E%3Ctext x='133' y='90' class='letter' text-anchor='middle'%3EP%3C/text%3E%3C!-- Letra R --%3E%3Ctext x='67' y='160' class='letter' text-anchor='middle'%3ER%3C/text%3E%3C!-- Letra C --%3E%3Ctext x='133' y='160' class='letter' text-anchor='middle'%3EC%3C/text%3E%3C!-- Pelota de voley en la parte inferior --%3E%3Cg transform='translate(100,190)'%3E%3C!-- Elipse principal --%3E%3Cellipse cx='0' cy='0' rx='22' ry='9' fill='none' stroke='%23000' stroke-width='3'/%3E%3Cellipse cx='0' cy='0' rx='16' ry='6' fill='none' stroke='%23000' stroke-width='2.5'/%3E%3C!-- Líneas laterales --%3E%3Cpath d='M-22,-2 Q-18,5,-14,8' fill='none' stroke='%23000' stroke-width='3'/%3E%3Cpath d='M22,-2 Q18,5,14,8' fill='none' stroke='%23000' stroke-width='3'/%3E%3C!-- Costuras inferiores --%3E%3Cline x1='-14' y1='8' x2='-12' y2='15' stroke='%23000' stroke-width='3'/%3E%3Cline x1='14' y1='8' x2='12' y2='15' stroke='%23000' stroke-width='3'/%3E%3C/g%3E%3C!-- Borde final del escudo --%3E%3Cpath d='M100,10 L180,35 L180,110 Q180,170,100,210 Q20,170,20,110 L20,35 Z' fill='none' stroke='%23000' stroke-width='3.5'/%3E%3C/svg%3E" alt="Logo APRC" class="header-logo">
+            <img src="https://i.ibb.co/gMLWLpVV/Logo.png" alt="Logo Ateneo Voley" class="header-logo">
             <h1>Ateneo Voley</h1>
-            <p>El escudo feo es a propósito</p>
+            <p>Sistema de Gestión de Estadísticas</p>
         </div>
         
         <div class="tabs">
@@ -541,7 +636,7 @@
                     
                     <div class="form-group">
                         <label>Rama *</label>
-                        <select id="ramaPartido" required>
+                        <select id="ramaPartido" required onchange="actualizarJugadoresDisponibles()">
                             <option value="">Seleccionar...</option>
                             <option value="Masculino">Masculino</option>
                             <option value="Femenino">Femenino</option>
@@ -550,7 +645,7 @@
                     
                     <div class="form-group">
                         <label>Categoría *</label>
-                        <select id="categoriaPartido" required>
+                        <select id="categoriaPartido" required onchange="actualizarJugadoresDisponibles()">
                             <option value="">Seleccionar...</option>
                             <option value="SUB 14">SUB 14</option>
                             <option value="SUB 16">SUB 16</option>
@@ -569,8 +664,19 @@
                         </select>
                     </div>
                     
+                    <div class="form-group" id="jugadoresConvocadosContainer" style="display:none;">
+                        <label>Jugadores Convocados * (Mantén Ctrl/Cmd para seleccionar múltiples)</label>
+                        <select id="jugadoresConvocados" multiple required size="10">
+                        </select>
+                        <p style="color:#666; font-size:0.9em; margin-top:5px;">
+                            Selecciona los jugadores que participarán en este partido
+                        </p>
+                    </div>
+                    
                     <button type="submit" class="btn" id="btnCrearPartido">Crear Partido</button>
                 </form>
+                
+                <div class="separador"></div>
                 
                 <div id="partidosList" class="partidos-list">
                     <div class="loading">
@@ -582,92 +688,35 @@
             
             <!-- TAB ESTADÍSTICAS -->
             <div id="estadisticas" class="tab-content">
-                <h2>Cargar Estadísticas</h2>
-                <form id="formEstadisticas" onsubmit="guardarEstadisticas(event)">
-                    <div class="form-group">
-                        <label>Partido *</label>
-                        <select id="partidoEstadisticas" required onchange="cargarJugadoresPartido()">
-                            <option value="">Seleccionar partido...</option>
-                        </select>
+                <h2>Cargar Estadísticas en Tiempo Real</h2>
+                
+                <div class="form-group">
+                    <label>Partido *</label>
+                    <select id="partidoEstadisticas" required onchange="cargarPantallaEstadisticas()">
+                        <option value="">Seleccionar partido...</option>
+                    </select>
+                </div>
+                
+                <!-- Pantalla de selección de jugadores -->
+                <div id="pantallaJugadores" style="display:none;">
+                    <h3>Jugadores Convocados</h3>
+                    <p style="color:#666; margin-bottom:20px;">Selecciona un jugador para cargar sus estadísticas</p>
+                    <div id="jugadoresConvocadosGrid" class="jugadores-list"></div>
+                </div>
+                
+                <!-- Pantalla de carga de estadísticas -->
+                <div id="pantallaCargaStats" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 id="nombreJugadorActual"></h3>
+                        <button class="btn btn-small" onclick="volverAJugadores()">← Volver a Jugadores</button>
                     </div>
                     
-                    <div class="form-group">
-                        <label>Jugador *</label>
-                        <div class="search-box">
-                            <span class="search-icon">🔍</span>
-                            <input type="text" id="buscarJugador" placeholder="Buscar jugador por nombre o dorsal..." oninput="filtrarJugadores()">
-                        </div>
-                        <select id="jugadorEstadisticas" required size="8">
-                            <option value="">Seleccionar jugador...</option>
-                        </select>
-                    </div>
+                    <div id="statsControles"></div>
                     
-                    <h3 style="margin: 30px 0 20px 0;">Estadísticas del Partido</h3>
-                    
-                    <div class="stats-grid">
-                        <div class="form-group">
-                            <label>Saque Favorable</label>
-                            <input type="number" id="saqueFavorable" min="0" value="0">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Saque Fallado</label>
-                            <input type="number" id="saqueFallado" min="0" value="0">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Ataque Favorable</label>
-                            <input type="number" id="ataqueFavorable" min="0" value="0">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Ataque Fallado</label>
-                            <input type="number" id="ataqueFallado" min="0" value="0">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Bloqueo Favorable</label>
-                            <input type="number" id="bloqueoFavorable" min="0" value="0">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Bloqueo Fallado</label>
-                            <input type="number" id="bloqueoFallado" min="0" value="0">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Armado Favorable</label>
-                            <input type="number" id="armadoFavorable" min="0" value="0">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Armado Fallado</label>
-                            <input type="number" id="armadoFallado" min="0" value="0">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Recepción Doble Positiva</label>
-                            <input type="number" id="recepcionDoblePositiva" min="0" value="0">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Recepción Positiva</label>
-                            <input type="number" id="recepcionPositiva" min="0" value="0">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Recepción Negativa</label>
-                            <input type="number" id="recepcionNegativa" min="0" value="0">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Recepción Negativa de Juego</label>
-                            <input type="number" id="recepcionNegativaJuego" min="0" value="0">
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="btn" id="btnGuardarEstadisticas">Guardar Estadísticas</button>
-                </form>
+                    <button class="btn" onclick="guardarYVolver()" style="margin-top:30px; width:100%;">
+                        Guardar y Volver a Jugadores
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -688,8 +737,10 @@
         let partidos = [];
         let estadisticas = [];
         let editandoJugador = false;
+        let jugadorActualStats = null;
+        let partidoActualStats = null;
+        let statsTemporales = {};
         
-        // Jerarquía de categorías (de menor a mayor)
         const jerarquiaCategorias = {
             'SUB 14': 0,
             'SUB 16': 1,
@@ -743,9 +794,7 @@
             }
         }
         
-        // Función auxiliar para verificar si un jugador puede jugar en una categoría
         function puedeJugarEnCategoria(jugador, categoriaPartido) {
-            // Un jugador puede jugar en su categoría o en categorías superiores
             const categoriasJugador = jugador.categorias;
             
             for (let catJugador of categoriasJugador) {
@@ -885,7 +934,6 @@
                 return;
             }
             
-            // Agrupar jugadores por rama
             const jugadoresPorRama = {
                 'Masculino': [],
                 'Femenino': []
@@ -895,7 +943,6 @@
                 jugadoresPorRama[jugador.rama].push(jugador);
             });
             
-            // Renderizar cada rama
             ['Masculino', 'Femenino'].forEach(rama => {
                 if (jugadoresPorRama[rama].length === 0) return;
                 
@@ -912,7 +959,6 @@
                 ramaContent.className = 'rama-content collapsed';
                 ramaContent.id = `rama-${rama}`;
                 
-                // Agrupar jugadores de esta rama por categoría
                 const categorias = ['SUB 14', 'SUB 16', 'SUB 18', 'SUB 21', 'Mayores'];
                 
                 categorias.forEach(categoria => {
@@ -970,7 +1016,6 @@
             });
         }
         
-        // Funciones para colapsar/expandir
         function toggleRama(rama) {
             const ramaContent = document.getElementById(`rama-${rama}`);
             const ramaTitulo = ramaContent.previousElementSibling;
@@ -1246,13 +1291,24 @@
             const categoria = document.getElementById('categoriaPartido').value;
             const local = document.getElementById('localPartido').value;
             
+            const jugadoresSelect = document.getElementById('jugadoresConvocados');
+            const jugadoresConvocados = Array.from(jugadoresSelect.selectedOptions).map(opt => opt.value).join(',');
+            
+            if (!jugadoresConvocados) {
+                mostrarAlerta('Debes seleccionar al menos un jugador convocado', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Crear Partido';
+                return;
+            }
+            
             try {
-                const url = `${API_URL}?action=addPartido&rival=${encodeURIComponent(rival)}&fecha=${encodeURIComponent(fecha)}&rama=${encodeURIComponent(rama)}&categoria=${encodeURIComponent(categoria)}&local=${encodeURIComponent(local)}`;
+                const url = `${API_URL}?action=addPartido&rival=${encodeURIComponent(rival)}&fecha=${encodeURIComponent(fecha)}&rama=${encodeURIComponent(rama)}&categoria=${encodeURIComponent(categoria)}&local=${encodeURIComponent(local)}&jugadoresConvocados=${encodeURIComponent(jugadoresConvocados)}`;
                 const response = await fetch(url);
                 const result = await response.json();
                 
                 if (result.success) {
                     document.getElementById('formPartido').reset();
+                    document.getElementById('jugadoresConvocadosContainer').style.display = 'none';
                     await cargarPartidos();
                     renderPartidos();
                     cargarPartidosSelect();
@@ -1265,6 +1321,39 @@
             
             btn.disabled = false;
             btn.textContent = 'Crear Partido';
+        }
+        
+        function actualizarJugadoresDisponibles() {
+            const rama = document.getElementById('ramaPartido').value;
+            const categoria = document.getElementById('categoriaPartido').value;
+            const container = document.getElementById('jugadoresConvocadosContainer');
+            const select = document.getElementById('jugadoresConvocados');
+            
+            if (!rama || !categoria) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'block';
+            select.innerHTML = '';
+            
+            const jugadoresAptos = jugadores.filter(j => 
+                j.rama === rama && puedeJugarEnCategoria(j, categoria)
+            );
+            
+            jugadoresAptos.forEach(jugador => {
+                const option = document.createElement('option');
+                option.value = jugador.id;
+                option.textContent = `#${jugador.dorsal} ${jugador.nombre} (${jugador.categorias.join(', ')})`;
+                select.appendChild(option);
+            });
+            
+            if (jugadoresAptos.length === 0) {
+                const option = document.createElement('option');
+                option.textContent = 'No hay jugadores disponibles para esta categoría y rama';
+                option.disabled = true;
+                select.appendChild(option);
+            }
         }
         
         async function eliminarPartido(partidoId) {
@@ -1302,6 +1391,12 @@
                 const card = document.createElement('div');
                 card.className = 'partido-card';
                 
+                const jugadoresConvocados = partido.jugadoresConvocados ? 
+                    partido.jugadoresConvocados.split(',').map(id => {
+                        const j = jugadores.find(jug => jug.id == id);
+                        return j ? `#${j.dorsal} ${j.nombre}` : '';
+                    }).filter(Boolean).join(', ') : 'No especificado';
+                
                 card.innerHTML = `
                     <h3>vs ${partido.rival}</h3>
                     <div class="partido-info">
@@ -1309,6 +1404,7 @@
                         <p><strong>Categoría:</strong> ${partido.categoria}</p>
                         <p><strong>Rama:</strong> ${partido.rama}</p>
                         <p><strong>Tipo:</strong> ${partido.local}</p>
+                        <p><strong>Convocados:</strong> ${jugadoresConvocados}</p>
                     </div>
                     <div class="card-actions">
                         <button class="btn btn-small btn-danger" onclick="eliminarPartido(${partido.id})">🗑️ Borrar</button>
@@ -1331,89 +1427,188 @@
             });
         }
         
-        function cargarJugadoresPartido() {
+        function cargarPantallaEstadisticas() {
             const partidoId = document.getElementById('partidoEstadisticas').value;
-            const select = document.getElementById('jugadorEstadisticas');
-            const buscarInput = document.getElementById('buscarJugador');
+            const pantallaJugadores = document.getElementById('pantallaJugadores');
+            const pantallaCarga = document.getElementById('pantallaCargaStats');
             
-            select.innerHTML = '<option value="">Seleccionar jugador...</option>';
-            buscarInput.value = '';
+            if (!partidoId) {
+                pantallaJugadores.style.display = 'none';
+                pantallaCarga.style.display = 'none';
+                return;
+            }
             
-            if (!partidoId) return;
+            partidoActualStats = partidos.find(p => p.id == partidoId);
             
-            const partido = partidos.find(p => p.id == partidoId);
-            if (!partido) return;
+            if (!partidoActualStats || !partidoActualStats.jugadoresConvocados) {
+                mostrarAlerta('Este partido no tiene jugadores convocados', 'error');
+                return;
+            }
             
-            // Filtrar jugadores que pueden jugar en este partido
-            // Deben coincidir en rama y poder jugar en la categoría (misma o inferior)
-            const jugadoresFiltrados = jugadores.filter(j => 
-                j.rama === partido.rama && puedeJugarEnCategoria(j, partido.categoria)
-            );
+            pantallaJugadores.style.display = 'block';
+            pantallaCarga.style.display = 'none';
             
-            // Guardar lista completa para filtrado
-            select.dataset.jugadores = JSON.stringify(jugadoresFiltrados);
+            const container = document.getElementById('jugadoresConvocadosGrid');
+            container.innerHTML = '';
             
-            jugadoresFiltrados.forEach(jugador => {
-                const option = document.createElement('option');
-                option.value = jugador.id;
-                option.textContent = `#${jugador.dorsal} ${jugador.nombre}`;
-                select.appendChild(option);
+            const jugadoresIds = partidoActualStats.jugadoresConvocados.split(',');
+            
+            jugadoresIds.forEach(jugadorId => {
+                const jugador = jugadores.find(j => j.id == jugadorId);
+                if (!jugador) return;
+                
+                const card = document.createElement('div');
+                card.className = 'jugador-card';
+                card.onclick = () => abrirCargaJugador(jugador);
+                card.style.cursor = 'pointer';
+                
+                const tieneStats = estadisticas.find(e => 
+                    e.partidoId == partidoActualStats.id && e.jugadorId == jugador.id
+                );
+                
+                card.innerHTML = `
+                    <h3>#${jugador.dorsal} ${jugador.nombre}</h3>
+                    <div class="jugador-info">
+                        <p><strong>Posiciones:</strong> ${jugador.posiciones.join(', ')}</p>
+                        ${tieneStats ? '<p style="color:#48bb78; font-weight:600;">✓ Stats cargadas</p>' : '<p style="color:#999;">Sin stats</p>'}
+                    </div>
+                `;
+                
+                container.appendChild(card);
             });
         }
         
-        function filtrarJugadores() {
-            const buscar = document.getElementById('buscarJugador').value.toLowerCase();
-            const select = document.getElementById('jugadorEstadisticas');
+        function abrirCargaJugador(jugador) {
+            jugadorActualStats = jugador;
             
-            if (!select.dataset.jugadores) return;
+            const statsExistentes = estadisticas.find(e => 
+                e.partidoId == partidoActualStats.id && e.jugadorId == jugador.id
+            );
             
-            const jugadoresFiltrados = JSON.parse(select.dataset.jugadores);
+            const esLibero = jugador.posiciones.length === 1 && jugador.posiciones[0] === 'Líbero';
             
-            select.innerHTML = '<option value="">Seleccionar jugador...</option>';
+            if (statsExistentes) {
+                statsTemporales = { ...statsExistentes };
+            } else {
+                statsTemporales = {
+                    saqueFavorable: 0,
+                    saqueFallado: 0,
+                    ataqueFavorable: 0,
+                    ataqueFallado: 0,
+                    bloqueoFavorable: 0,
+                    bloqueoFallado: 0,
+                    armadoFavorable: 0,
+                    armadoFallado: 0,
+                    recepcionDoblePositiva: 0,
+                    recepcionPositiva: 0,
+                    recepcionNegativa: 0,
+                    recepcionNegativaJuego: 0
+                };
+            }
             
-            jugadoresFiltrados
-                .filter(j => 
-                    j.nombre.toLowerCase().includes(buscar) || 
-                    j.dorsal.toString().includes(buscar)
-                )
-                .forEach(jugador => {
-                    const option = document.createElement('option');
-                    option.value = jugador.id;
-                    option.textContent = `#${jugador.dorsal} ${jugador.nombre}`;
-                    select.appendChild(option);
-                });
+            document.getElementById('pantallaJugadores').style.display = 'none';
+            document.getElementById('pantallaCargaStats').style.display = 'block';
+            document.getElementById('nombreJugadorActual').textContent = `#${jugador.dorsal} ${jugador.nombre}`;
+            
+            renderControlesStats(esLibero);
         }
         
-        async function guardarEstadisticas(event) {
-            event.preventDefault();
+        function renderControlesStats(esLibero) {
+            const container = document.getElementById('statsControles');
+            container.innerHTML = '';
             
-            const btn = document.getElementById('btnGuardarEstadisticas');
+            const stats = esLibero ? [
+                { id: 'armadoFavorable', label: 'Armado Favorable', section: 'Armado' },
+                { id: 'armadoFallado', label: 'Armado Fallado', section: 'Armado' },
+                { id: 'recepcionDoblePositiva', label: 'Recepción Doble Positiva', section: 'Recepción' },
+                { id: 'recepcionPositiva', label: 'Recepción Positiva', section: 'Recepción' },
+                { id: 'recepcionNegativa', label: 'Recepción Negativa', section: 'Recepción' },
+                { id: 'recepcionNegativaJuego', label: 'Recepción Negativa de Juego', section: 'Recepción' }
+            ] : [
+                { id: 'saqueFavorable', label: 'Saque Favorable', section: 'Saque' },
+                { id: 'saqueFallado', label: 'Saque Fallado', section: 'Saque' },
+                { id: 'ataqueFavorable', label: 'Ataque Favorable', section: 'Ataque' },
+                { id: 'ataqueFallado', label: 'Ataque Fallado', section: 'Ataque' },
+                { id: 'bloqueoFavorable', label: 'Bloqueo Favorable', section: 'Bloqueo' },
+                { id: 'bloqueoFallado', label: 'Bloqueo Fallado', section: 'Bloqueo' },
+                { id: 'armadoFavorable', label: 'Armado Favorable', section: 'Armado' },
+                { id: 'armadoFallado', label: 'Armado Fallado', section: 'Armado' },
+                { id: 'recepcionDoblePositiva', label: 'Recepción Doble Positiva', section: 'Recepción' },
+                { id: 'recepcionPositiva', label: 'Recepción Positiva', section: 'Recepción' },
+                { id: 'recepcionNegativa', label: 'Recepción Negativa', section: 'Recepción' },
+                { id: 'recepcionNegativaJuego', label: 'Recepción Negativa de Juego', section: 'Recepción' }
+            ];
+            
+            const sections = {};
+            stats.forEach(stat => {
+                if (!sections[stat.section]) {
+                    sections[stat.section] = [];
+                }
+                sections[stat.section].push(stat);
+            });
+            
+            Object.keys(sections).forEach(sectionName => {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'stats-section';
+                
+                const sectionTitle = document.createElement('div');
+                sectionTitle.className = 'stats-section-title';
+                sectionTitle.textContent = sectionName;
+                sectionDiv.appendChild(sectionTitle);
+                
+                sections[sectionName].forEach(stat => {
+                    const control = document.createElement('div');
+                    control.className = 'stat-control';
+                    
+                    control.innerHTML = `
+                        <div class="stat-control-info">
+                            <div class="stat-control-label">${stat.label}</div>
+                            <div class="stat-control-value" id="valor-${stat.id}">${statsTemporales[stat.id] || 0}</div>
+                        </div>
+                        <div class="stat-control-buttons">
+                            <button class="btn-counter btn-minus" onclick="modificarStat('${stat.id}', -1)">−</button>
+                            <button class="btn-counter btn-plus" onclick="modificarStat('${stat.id}', 1)">+</button>
+                        </div>
+                    `;
+                    
+                    sectionDiv.appendChild(control);
+                });
+                
+                container.appendChild(sectionDiv);
+            });
+        }
+        
+        function modificarStat(statId, cambio) {
+            const valorActual = parseInt(statsTemporales[statId]) || 0;
+            const nuevoValor = Math.max(0, valorActual + cambio);
+            
+            statsTemporales[statId] = nuevoValor;
+            
+            const elemento = document.getElementById(`valor-${statId}`);
+            if (elemento) {
+                elemento.textContent = nuevoValor;
+                
+                elemento.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    elemento.style.transform = 'scale(1)';
+                }, 200);
+            }
+        }
+        
+        async function guardarYVolver() {
+            const btn = event.target;
             btn.disabled = true;
             btn.textContent = 'Guardando...';
             
-            const partidoId = document.getElementById('partidoEstadisticas').value;
-            const jugadorId = document.getElementById('jugadorEstadisticas').value;
-            
             const existeEstadistica = estadisticas.find(
-                e => e.partidoId == partidoId && e.jugadorId == jugadorId
+                e => e.partidoId == partidoActualStats.id && e.jugadorId == jugadorActualStats.id
             );
             
             const params = new URLSearchParams({
                 action: existeEstadistica ? 'updateEstadistica' : 'addEstadistica',
-                partidoId: partidoId,
-                jugadorId: jugadorId,
-                saqueFavorable: document.getElementById('saqueFavorable').value || 0,
-                saqueFallado: document.getElementById('saqueFallado').value || 0,
-                ataqueFavorable: document.getElementById('ataqueFavorable').value || 0,
-                ataqueFallado: document.getElementById('ataqueFallado').value || 0,
-                bloqueoFavorable: document.getElementById('bloqueoFavorable').value || 0,
-                bloqueoFallado: document.getElementById('bloqueoFallado').value || 0,
-                armadoFavorable: document.getElementById('armadoFavorable').value || 0,
-                armadoFallado: document.getElementById('armadoFallado').value || 0,
-                recepcionDoblePositiva: document.getElementById('recepcionDoblePositiva').value || 0,
-                recepcionPositiva: document.getElementById('recepcionPositiva').value || 0,
-                recepcionNegativa: document.getElementById('recepcionNegativa').value || 0,
-                recepcionNegativaJuego: document.getElementById('recepcionNegativaJuego').value || 0
+                partidoId: partidoActualStats.id,
+                jugadorId: jugadorActualStats.id,
+                ...statsTemporales
             });
             
             try {
@@ -1422,8 +1617,8 @@
                 
                 if (result.success) {
                     await cargarEstadisticas();
-                    document.getElementById('formEstadisticas').reset();
-                    mostrarAlerta(existeEstadistica ? '¡Estadísticas actualizadas correctamente!' : '¡Estadísticas guardadas correctamente!', 'success');
+                    volverAJugadores();
+                    mostrarAlerta('¡Estadísticas guardadas correctamente!', 'success');
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -1431,7 +1626,14 @@
             }
             
             btn.disabled = false;
-            btn.textContent = 'Guardar Estadísticas';
+            btn.textContent = 'Guardar y Volver a Jugadores';
+        }
+        
+        function volverAJugadores() {
+            document.getElementById('pantallaCargaStats').style.display = 'none';
+            document.getElementById('pantallaJugadores').style.display = 'block';
+            
+            cargarPantallaEstadisticas();
         }
         
         function cerrarModal() {

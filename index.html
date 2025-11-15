@@ -1301,10 +1301,26 @@
                 return;
             }
             
+            console.log('Jugadores convocados a enviar:', jugadoresConvocados); // Debug
+            
             try {
-                const url = `${API_URL}?action=addPartido&rival=${encodeURIComponent(rival)}&fecha=${encodeURIComponent(fecha)}&rama=${encodeURIComponent(rama)}&categoria=${encodeURIComponent(categoria)}&local=${encodeURIComponent(local)}&jugadoresConvocados=${encodeURIComponent(jugadoresConvocados)}`;
+                const params = new URLSearchParams({
+                    action: 'addPartido',
+                    rival: rival,
+                    fecha: fecha,
+                    rama: rama,
+                    categoria: categoria,
+                    local: local,
+                    jugadoresConvocados: jugadoresConvocados
+                });
+                
+                const url = `${API_URL}?${params.toString()}`;
+                console.log('URL a llamar:', url); // Debug
+                
                 const response = await fetch(url);
                 const result = await response.json();
+                
+                console.log('Respuesta del servidor:', result); // Debug
                 
                 if (result.success) {
                     document.getElementById('formPartido').reset();
@@ -1313,10 +1329,12 @@
                     renderPartidos();
                     cargarPartidosSelect();
                     mostrarAlerta('¡Partido creado correctamente!', 'success');
+                } else {
+                    mostrarAlerta('Error al crear partido: ' + (result.message || 'Error desconocido'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                mostrarAlerta('Error al crear partido', 'error');
+                mostrarAlerta('Error al crear partido: ' + error.message, 'error');
             }
             
             btn.disabled = false;

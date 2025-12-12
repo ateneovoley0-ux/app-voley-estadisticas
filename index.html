@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ateneo Voley</title>
+    <title>Ateneo Voley - Optimizado</title>
     <style>
         * {
             margin: 0;
@@ -171,6 +171,10 @@
         
         .btn-warning {
             background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
         }
         
         .rama-grupo {
@@ -409,6 +413,12 @@
             border: 1px solid #f5c6cb;
         }
         
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
         .loading {
             text-align: center;
             padding: 40px;
@@ -542,6 +552,132 @@
             padding-bottom: 10px;
             border-bottom: 3px solid #667eea;
         }
+        
+        /* NUEVOS ESTILOS PARA OPTIMIZACIÓN */
+        .save-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 999;
+            animation: slideIn 0.3s;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .save-status.show {
+            display: flex;
+        }
+        
+        .save-status.unsaved {
+            border-left: 4px solid #ed8936;
+        }
+        
+        .save-status.saving {
+            border-left: 4px solid #667eea;
+        }
+        
+        .save-status.saved {
+            border-left: 4px solid #48bb78;
+        }
+        
+        .save-status-icon {
+            font-size: 1.5em;
+        }
+        
+        .save-status-text {
+            font-weight: 600;
+        }
+        
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        
+        .stats-header-info h3 {
+            margin-bottom: 5px;
+        }
+        
+        .stats-header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .auto-save-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .auto-save-toggle:hover {
+            border-color: #667eea;
+        }
+        
+        .auto-save-toggle input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+        
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .quick-stat-item {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .quick-stat-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .quick-stat-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .jugador-card.has-changes {
+            border-color: #ed8936;
+            background: #fffaf0;
+        }
+        
+        .jugador-card.has-changes::after {
+            content: '●';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #ed8936;
+            font-size: 1.5em;
+        }
     </style>
 </head>
 <body>
@@ -549,7 +685,7 @@
         <div class="header">
             <img src="https://i.ibb.co/gMLWLpVV/Logo.png" alt="Logo Ateneo Voley" class="header-logo">
             <h1>Ateneo Voley</h1>
-            <p>Sistema de Gestión de Estadísticas</p>
+            <p>Sistema de Gestión de Estadísticas - ⚡ Optimizado</p>
         </div>
         
         <div class="tabs">
@@ -688,7 +824,7 @@
             
             <!-- TAB ESTADÍSTICAS -->
             <div id="estadisticas" class="tab-content">
-                <h2>Cargar Estadísticas en Tiempo Real</h2>
+                <h2>Cargar Estadísticas en Tiempo Real ⚡</h2>
                 
                 <div class="form-group">
                     <label>Partido *</label>
@@ -699,26 +835,51 @@
                 
                 <!-- Pantalla de selección de jugadores -->
                 <div id="pantallaJugadores" style="display:none;">
-                    <h3>Jugadores Convocados</h3>
-                    <p style="color:#666; margin-bottom:20px;">Selecciona un jugador para cargar sus estadísticas</p>
+                    <div class="stats-header">
+                        <div class="stats-header-info">
+                            <h3>Jugadores Convocados</h3>
+                            <p style="color:#666; margin:0;">Selecciona un jugador para cargar sus estadísticas</p>
+                        </div>
+                        <div class="stats-header-actions">
+                            <label class="auto-save-toggle">
+                                <input type="checkbox" id="autoSaveToggle" onchange="toggleAutoSave()">
+                                <span>Auto-guardar cada 30s</span>
+                            </label>
+                            <button class="btn btn-success btn-small" onclick="guardarTodosLosJugadores()">
+                                💾 Guardar Todos
+                            </button>
+                        </div>
+                    </div>
                     <div id="jugadoresConvocadosGrid" class="jugadores-list"></div>
                 </div>
                 
                 <!-- Pantalla de carga de estadísticas -->
                 <div id="pantallaCargaStats" style="display:none;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <h3 id="nombreJugadorActual"></h3>
-                        <button class="btn btn-small" onclick="volverAJugadores()">← Volver a Jugadores</button>
+                    <div class="stats-header">
+                        <div class="stats-header-info">
+                            <h3 id="nombreJugadorActual"></h3>
+                            <p style="color:#666; margin:0;" id="estadoGuardado">Los cambios se guardan localmente</p>
+                        </div>
+                        <div class="stats-header-actions">
+                            <button class="btn btn-small" onclick="volverAJugadores()">← Volver a Jugadores</button>
+                            <button class="btn btn-success btn-small" onclick="guardarJugadorActual()">
+                                💾 Guardar
+                            </button>
+                        </div>
                     </div>
                     
-                    <div id="statsControles"></div>
+                    <div class="quick-stats" id="quickStats"></div>
                     
-                    <button class="btn" onclick="guardarYVolver()" style="margin-top:30px; width:100%;">
-                        Guardar y Volver a Jugadores
-                    </button>
+                    <div id="statsControles"></div>
                 </div>
             </div>
         </div>
+    </div>
+    
+    <!-- Indicador de estado de guardado -->
+    <div id="saveStatus" class="save-status">
+        <span class="save-status-icon">💾</span>
+        <span class="save-status-text"></span>
     </div>
     
     <!-- MODAL JUGADOR -->
@@ -739,7 +900,12 @@
         let editandoJugador = false;
         let jugadorActualStats = null;
         let partidoActualStats = null;
-        let statsTemporales = {};
+        
+        // NUEVA: Sistema de guardado por lotes
+        let statsTemporalesPorJugador = {}; // { jugadorId: { stats } }
+        let jugadoresConCambios = new Set(); // IDs de jugadores con cambios sin guardar
+        let autoSaveInterval = null;
+        let isSaving = false;
         
         const jerarquiaCategorias = {
             'SUB 14': 0,
@@ -751,6 +917,15 @@
         
         window.addEventListener('load', async () => {
             await cargarTodosLosDatos();
+        });
+        
+        // Prevenir pérdida de datos al cerrar
+        window.addEventListener('beforeunload', (e) => {
+            if (jugadoresConCambios.size > 0) {
+                e.preventDefault();
+                e.returnValue = 'Tienes cambios sin guardar. ¿Estás seguro de salir?';
+                return e.returnValue;
+            }
         });
         
         async function cargarTodosLosDatos() {
@@ -778,12 +953,6 @@
             try {
                 const response = await fetch(`${API_URL}?action=getPartidos`);
                 partidos = await response.json();
-                console.log('=== PARTIDOS CARGADOS ===');
-                console.log('Total partidos:', partidos.length);
-                if (partidos.length > 0) {
-                    console.log('Último partido:', partidos[partidos.length - 1]);
-                    console.log('JugadoresConvocados del último:', partidos[partidos.length - 1].jugadoresConvocados);
-                }
             } catch (error) {
                 console.error('Error cargando partidos:', error);
                 mostrarAlerta('Error al cargar partidos', 'error');
@@ -912,22 +1081,17 @@
             
             try {
                 const url = `${API_URL}?action=deleteJugador&id=${jugadorId}`;
-                const response = await fetch(url, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
+                const response = await fetch(url);
                 const result = await response.json();
                 
                 if (result.success) {
                     await cargarJugadores();
                     renderJugadores();
                     mostrarAlerta('¡Jugador eliminado correctamente!', 'success');
-                } else {
-                    mostrarAlerta('Error: ' + (result.message || 'No se pudo eliminar el jugador'), 'error');
                 }
             } catch (error) {
-                console.error('Error completo:', error);
-                mostrarAlerta('Error al eliminar jugador: ' + error.message, 'error');
+                console.error('Error:', error);
+                mostrarAlerta('Error al eliminar jugador', 'error');
             }
         }
         
@@ -1307,9 +1471,6 @@
                 return;
             }
             
-            console.log('=== DEBUG CREAR PARTIDO ===');
-            console.log('Jugadores convocados:', jugadoresConvocados);
-            
             try {
                 const params = new URLSearchParams({
                     action: 'addPartido',
@@ -1322,27 +1483,8 @@
                 });
                 
                 const url = `${API_URL}?${params.toString()}`;
-                console.log('URL completa:', url);
-                
                 const response = await fetch(url);
-                console.log('Response status:', response.status);
-                console.log('Response ok:', response.ok);
-                
-                const textResponse = await response.text();
-                console.log('Response text:', textResponse);
-                
-                let result;
-                try {
-                    result = JSON.parse(textResponse);
-                    console.log('Response JSON:', result);
-                } catch (parseError) {
-                    console.error('Error al parsear JSON:', parseError);
-                    console.log('Respuesta completa:', textResponse);
-                    mostrarAlerta('Error: La respuesta del servidor no es JSON válido', 'error');
-                    btn.disabled = false;
-                    btn.textContent = 'Crear Partido';
-                    return;
-                }
+                const result = await response.json();
                 
                 if (result.success) {
                     document.getElementById('formPartido').reset();
@@ -1351,13 +1493,10 @@
                     renderPartidos();
                     cargarPartidosSelect();
                     mostrarAlerta('¡Partido creado correctamente!', 'success');
-                } else {
-                    console.error('Error en la respuesta:', result);
-                    mostrarAlerta('Error al crear partido: ' + (result.message || 'Error desconocido'), 'error');
                 }
             } catch (error) {
-                console.error('Error completo:', error);
-                mostrarAlerta('Error al crear partido: ' + error.message, 'error');
+                console.error('Error:', error);
+                mostrarAlerta('Error al crear partido', 'error');
             }
             
             btn.disabled = false;
@@ -1473,23 +1612,30 @@
             });
         }
         
+        // ========================================
+        // NUEVAS FUNCIONES OPTIMIZADAS
+        // ========================================
+        
         function cargarPantallaEstadisticas() {
             const partidoId = document.getElementById('partidoEstadisticas').value;
             const pantallaJugadores = document.getElementById('pantallaJugadores');
             const pantallaCarga = document.getElementById('pantallaCargaStats');
             
+            // Limpiar auto-guardado anterior si existe
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+                autoSaveInterval = null;
+            }
+            
             if (!partidoId) {
                 pantallaJugadores.style.display = 'none';
                 pantallaCarga.style.display = 'none';
+                statsTemporalesPorJugador = {};
+                jugadoresConCambios.clear();
                 return;
             }
             
             partidoActualStats = partidos.find(p => p.id == partidoId);
-            
-            console.log('=== PARTIDO SELECCIONADO ===');
-            console.log('Partido completo:', partidoActualStats);
-            console.log('jugadoresConvocados:', partidoActualStats.jugadoresConvocados);
-            console.log('Tipo:', typeof partidoActualStats.jugadoresConvocados);
             
             if (!partidoActualStats) {
                 mostrarAlerta('Partido no encontrado', 'error');
@@ -1503,24 +1649,62 @@
                 return;
             }
             
+            // Inicializar estadísticas temporales para este partido
+            statsTemporalesPorJugador = {};
+            jugadoresConCambios.clear();
+            
+            const jugadoresIds = partidoActualStats.jugadoresConvocados.split(',');
+            
+            // Cargar stats existentes o inicializar
+            jugadoresIds.forEach(jugadorId => {
+                const statsExistentes = estadisticas.find(e => 
+                    e.partidoId == partidoActualStats.id && e.jugadorId == jugadorId
+                );
+                
+                if (statsExistentes) {
+                    statsTemporalesPorJugador[jugadorId] = { ...statsExistentes };
+                } else {
+                    statsTemporalesPorJugador[jugadorId] = {
+                        saqueFavorable: 0,
+                        saqueFallado: 0,
+                        ataqueFavorable: 0,
+                        ataqueFallado: 0,
+                        bloqueoFavorable: 0,
+                        bloqueoFallado: 0,
+                        armadoFavorable: 0,
+                        armadoFallado: 0,
+                        recepcionDoblePositiva: 0,
+                        recepcionPositiva: 0,
+                        recepcionNegativa: 0,
+                        recepcionNegativaJuego: 0
+                    };
+                }
+            });
+            
             pantallaJugadores.style.display = 'block';
             pantallaCarga.style.display = 'none';
             
+            renderJugadoresConvocados();
+        }
+        
+        function renderJugadoresConvocados() {
             const container = document.getElementById('jugadoresConvocadosGrid');
             container.innerHTML = '';
             
             const jugadoresIds = partidoActualStats.jugadoresConvocados.split(',');
-            console.log('IDs de jugadores:', jugadoresIds);
             
             jugadoresIds.forEach(jugadorId => {
                 const jugador = jugadores.find(j => j.id == jugadorId);
-                if (!jugador) {
-                    console.warn('Jugador no encontrado:', jugadorId);
-                    return;
-                }
+                if (!jugador) return;
                 
                 const card = document.createElement('div');
                 card.className = 'jugador-card';
+                card.id = `jugador-card-${jugadorId}`;
+                
+                if (jugadoresConCambios.has(jugadorId)) {
+                    card.classList.add('has-changes');
+                }
+                
                 card.onclick = () => abrirCargaJugador(jugador);
                 card.style.cursor = 'pointer';
                 
@@ -1528,11 +1712,18 @@
                     e.partidoId == partidoActualStats.id && e.jugadorId == jugador.id
                 );
                 
+                const cambiosSinGuardar = jugadoresConCambios.has(jugadorId);
+                
                 card.innerHTML = `
                     <h3>#${jugador.dorsal} ${jugador.nombre}</h3>
                     <div class="jugador-info">
                         <p><strong>Posiciones:</strong> ${jugador.posiciones.join(', ')}</p>
-                        ${tieneStats ? '<p style="color:#48bb78; font-weight:600;">✓ Stats cargadas</p>' : '<p style="color:#999;">Sin stats</p>'}
+                        ${cambiosSinGuardar ? 
+                            '<p style="color:#ed8936; font-weight:600;">⚠️ Cambios sin guardar</p>' :
+                            tieneStats ? 
+                                '<p style="color:#48bb78; font-weight:600;">✓ Stats guardadas</p>' : 
+                                '<p style="color:#999;">Sin stats</p>'
+                        }
                     </div>
                 `;
                 
@@ -1543,41 +1734,22 @@
         function abrirCargaJugador(jugador) {
             jugadorActualStats = jugador;
             
-            const statsExistentes = estadisticas.find(e => 
-                e.partidoId == partidoActualStats.id && e.jugadorId == jugador.id
-            );
-            
             const esLibero = jugador.posiciones.length === 1 && jugador.posiciones[0] === 'Líbero';
-            
-            if (statsExistentes) {
-                statsTemporales = { ...statsExistentes };
-            } else {
-                statsTemporales = {
-                    saqueFavorable: 0,
-                    saqueFallado: 0,
-                    ataqueFavorable: 0,
-                    ataqueFallado: 0,
-                    bloqueoFavorable: 0,
-                    bloqueoFallado: 0,
-                    armadoFavorable: 0,
-                    armadoFallado: 0,
-                    recepcionDoblePositiva: 0,
-                    recepcionPositiva: 0,
-                    recepcionNegativa: 0,
-                    recepcionNegativaJuego: 0
-                };
-            }
             
             document.getElementById('pantallaJugadores').style.display = 'none';
             document.getElementById('pantallaCargaStats').style.display = 'block';
             document.getElementById('nombreJugadorActual').textContent = `#${jugador.dorsal} ${jugador.nombre}`;
             
+            actualizarEstadoGuardado();
             renderControlesStats(esLibero);
+            actualizarQuickStats(esLibero);
         }
         
         function renderControlesStats(esLibero) {
             const container = document.getElementById('statsControles');
             container.innerHTML = '';
+            
+            const statsActuales = statsTemporalesPorJugador[jugadorActualStats.id];
             
             const stats = esLibero ? [
                 { id: 'armadoFavorable', label: 'Armado Favorable', section: 'Armado' },
@@ -1625,7 +1797,7 @@
                     control.innerHTML = `
                         <div class="stat-control-info">
                             <div class="stat-control-label">${stat.label}</div>
-                            <div class="stat-control-value" id="valor-${stat.id}">${statsTemporales[stat.id] || 0}</div>
+                            <div class="stat-control-value" id="valor-${stat.id}">${statsActuales[stat.id] || 0}</div>
                         </div>
                         <div class="stat-control-buttons">
                             <button class="btn-counter btn-minus" onclick="modificarStat('${stat.id}', -1)">−</button>
@@ -1641,36 +1813,115 @@
         }
         
         function modificarStat(statId, cambio) {
-            const valorActual = parseInt(statsTemporales[statId]) || 0;
+            const jugadorId = jugadorActualStats.id;
+            const valorActual = parseInt(statsTemporalesPorJugador[jugadorId][statId]) || 0;
             const nuevoValor = Math.max(0, valorActual + cambio);
             
-            statsTemporales[statId] = nuevoValor;
+            statsTemporalesPorJugador[jugadorId][statId] = nuevoValor;
+            jugadoresConCambios.add(jugadorId);
             
             const elemento = document.getElementById(`valor-${statId}`);
             if (elemento) {
                 elemento.textContent = nuevoValor;
-                
                 elemento.style.transform = 'scale(1.2)';
                 setTimeout(() => {
                     elemento.style.transform = 'scale(1)';
                 }, 200);
             }
+            
+            actualizarEstadoGuardado();
+            
+            const esLibero = jugadorActualStats.posiciones.length === 1 && 
+                             jugadorActualStats.posiciones[0] === 'Líbero';
+            actualizarQuickStats(esLibero);
         }
         
-        async function guardarYVolver() {
-            const btn = event.target;
-            btn.disabled = true;
-            btn.textContent = 'Guardando...';
+        function actualizarQuickStats(esLibero) {
+            const container = document.getElementById('quickStats');
+            const stats = statsTemporalesPorJugador[jugadorActualStats.id];
+            
+            if (esLibero) {
+                const recepTotal = (parseInt(stats.recepcionDoblePositiva) || 0) + 
+                                  (parseInt(stats.recepcionPositiva) || 0) +
+                                  (parseInt(stats.recepcionNegativa) || 0) + 
+                                  (parseInt(stats.recepcionNegativaJuego) || 0);
+                
+                const recepPos = (parseInt(stats.recepcionDoblePositiva) || 0) + 
+                                (parseInt(stats.recepcionPositiva) || 0);
+                
+                const eficRecep = recepTotal > 0 ? Math.round((recepPos / recepTotal) * 100) : 0;
+                
+                const armadoTotal = (parseInt(stats.armadoFavorable) || 0) + 
+                                   (parseInt(stats.armadoFallado) || 0);
+                
+                const eficArmado = armadoTotal > 0 ? 
+                    Math.round(((parseInt(stats.armadoFavorable) || 0) / armadoTotal) * 100) : 0;
+                
+                container.innerHTML = `
+                    <div class="quick-stat-item">
+                        <div class="quick-stat-label">Recepción Efectiva</div>
+                        <div class="quick-stat-value">${eficRecep}%</div>
+                    </div>
+                    <div class="quick-stat-item">
+                        <div class="quick-stat-label">Armado Efectivo</div>
+                        <div class="quick-stat-value">${eficArmado}%</div>
+                    </div>
+                `;
+            } else {
+                const saqueTotal = (parseInt(stats.saqueFavorable) || 0) + (parseInt(stats.saqueFallado) || 0);
+                const eficSaque = saqueTotal > 0 ? Math.round(((parseInt(stats.saqueFavorable) || 0) / saqueTotal) * 100) : 0;
+                
+                const ataqueTotal = (parseInt(stats.ataqueFavorable) || 0) + (parseInt(stats.ataqueFallado) || 0);
+                const eficAtaque = ataqueTotal > 0 ? Math.round(((parseInt(stats.ataqueFavorable) || 0) / ataqueTotal) * 100) : 0;
+                
+                const bloqueoTotal = (parseInt(stats.bloqueoFavorable) || 0) + (parseInt(stats.bloqueoFallado) || 0);
+                const eficBloqueo = bloqueoTotal > 0 ? Math.round(((parseInt(stats.bloqueoFavorable) || 0) / bloqueoTotal) * 100) : 0;
+                
+                container.innerHTML = `
+                    <div class="quick-stat-item">
+                        <div class="quick-stat-label">Saque Efectivo</div>
+                        <div class="quick-stat-value">${eficSaque}%</div>
+                    </div>
+                    <div class="quick-stat-item">
+                        <div class="quick-stat-label">Ataque Efectivo</div>
+                        <div class="quick-stat-value">${eficAtaque}%</div>
+                    </div>
+                    <div class="quick-stat-item">
+                        <div class="quick-stat-label">Bloqueo Efectivo</div>
+                        <div class="quick-stat-value">${eficBloqueo}%</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function actualizarEstadoGuardado() {
+            const estado = document.getElementById('estadoGuardado');
+            if (jugadoresConCambios.has(jugadorActualStats.id)) {
+                estado.textContent = '⚠️ Cambios sin guardar';
+                estado.style.color = '#ed8936';
+            } else {
+                estado.textContent = '✓ Todo guardado';
+                estado.style.color = '#48bb78';
+            }
+        }
+        
+        async function guardarJugadorActual() {
+            if (!jugadorActualStats) return;
+            
+            mostrarSaveStatus('saving', 'Guardando...');
+            
+            const jugadorId = jugadorActualStats.id;
+            const stats = statsTemporalesPorJugador[jugadorId];
             
             const existeEstadistica = estadisticas.find(
-                e => e.partidoId == partidoActualStats.id && e.jugadorId == jugadorActualStats.id
+                e => e.partidoId == partidoActualStats.id && e.jugadorId == jugadorId
             );
             
             const params = new URLSearchParams({
                 action: existeEstadistica ? 'updateEstadistica' : 'addEstadistica',
                 partidoId: partidoActualStats.id,
-                jugadorId: jugadorActualStats.id,
-                ...statsTemporales
+                jugadorId: jugadorId,
+                ...stats
             });
             
             try {
@@ -1678,24 +1929,139 @@
                 const result = await response.json();
                 
                 if (result.success) {
+                    jugadoresConCambios.delete(jugadorId);
                     await cargarEstadisticas();
-                    volverAJugadores();
-                    mostrarAlerta('¡Estadísticas guardadas correctamente!', 'success');
+                    actualizarEstadoGuardado();
+                    mostrarSaveStatus('saved', '✓ Guardado');
+                } else {
+                    mostrarSaveStatus('unsaved', 'Error al guardar');
+                    mostrarAlerta('Error al guardar estadísticas', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
+                mostrarSaveStatus('unsaved', 'Error al guardar');
                 mostrarAlerta('Error al guardar estadísticas', 'error');
             }
+        }
+        
+        async function guardarTodosLosJugadores() {
+            if (jugadoresConCambios.size === 0) {
+                mostrarAlerta('No hay cambios para guardar', 'warning');
+                return;
+            }
             
-            btn.disabled = false;
-            btn.textContent = 'Guardar y Volver a Jugadores';
+            if (isSaving) {
+                mostrarAlerta('Ya se está guardando...', 'warning');
+                return;
+            }
+            
+            isSaving = true;
+            mostrarSaveStatus('saving', `Guardando ${jugadoresConCambios.size} jugador(es)...`);
+            
+            const jugadoresAGuardar = Array.from(jugadoresConCambios);
+            let guardados = 0;
+            let errores = 0;
+            
+            for (const jugadorId of jugadoresAGuardar) {
+                const stats = statsTemporalesPorJugador[jugadorId];
+                
+                const existeEstadistica = estadisticas.find(
+                    e => e.partidoId == partidoActualStats.id && e.jugadorId == jugadorId
+                );
+                
+                const params = new URLSearchParams({
+                    action: existeEstadistica ? 'updateEstadistica' : 'addEstadistica',
+                    partidoId: partidoActualStats.id,
+                    jugadorId: jugadorId,
+                    ...stats
+                });
+                
+                try {
+                    const response = await fetch(`${API_URL}?${params.toString()}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        guardados++;
+                        jugadoresConCambios.delete(jugadorId);
+                        
+                        // Actualizar tarjeta visual
+                        const card = document.getElementById(`jugador-card-${jugadorId}`);
+                        if (card) {
+                            card.classList.remove('has-changes');
+                        }
+                    } else {
+                        errores++;
+                    }
+                } catch (error) {
+                    console.error('Error guardando jugador', jugadorId, error);
+                    errores++;
+                }
+                
+                // Pequeña pausa entre requests para no sobrecargar
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            await cargarEstadisticas();
+            renderJugadoresConvocados();
+            
+            isSaving = false;
+            
+            if (errores === 0) {
+                mostrarSaveStatus('saved', `✓ ${guardados} jugador(es) guardado(s)`);
+                mostrarAlerta('¡Todas las estadísticas guardadas correctamente!', 'success');
+            } else {
+                mostrarSaveStatus('unsaved', `${guardados} guardados, ${errores} errores`);
+                mostrarAlerta(`Se guardaron ${guardados} jugador(es). ${errores} tuvieron errores.`, 'warning');
+            }
+        }
+        
+        function toggleAutoSave() {
+            const checkbox = document.getElementById('autoSaveToggle');
+            
+            if (checkbox.checked) {
+                autoSaveInterval = setInterval(async () => {
+                    if (jugadoresConCambios.size > 0 && !isSaving) {
+                        console.log('Auto-guardado ejecutándose...');
+                        await guardarTodosLosJugadores();
+                    }
+                }, 30000); // 30 segundos
+                
+                mostrarAlerta('Auto-guardado activado (cada 30 segundos)', 'success');
+            } else {
+                if (autoSaveInterval) {
+                    clearInterval(autoSaveInterval);
+                    autoSaveInterval = null;
+                }
+                mostrarAlerta('Auto-guardado desactivado', 'warning');
+            }
         }
         
         function volverAJugadores() {
+            // Advertir si hay cambios sin guardar
+            if (jugadorActualStats && jugadoresConCambios.has(jugadorActualStats.id)) {
+                if (!confirm('Tienes cambios sin guardar. ¿Deseas volver sin guardar?')) {
+                    return;
+                }
+            }
+            
             document.getElementById('pantallaCargaStats').style.display = 'none';
             document.getElementById('pantallaJugadores').style.display = 'block';
             
-            cargarPantallaEstadisticas();
+            renderJugadoresConvocados();
+        }
+        
+        function mostrarSaveStatus(tipo, mensaje) {
+            const status = document.getElementById('saveStatus');
+            const text = status.querySelector('.save-status-text');
+            
+            status.className = `save-status ${tipo} show`;
+            text.textContent = mensaje;
+            
+            if (tipo === 'saved' || tipo === 'unsaved') {
+                setTimeout(() => {
+                    status.classList.remove('show');
+                }, 3000);
+            }
         }
         
         function cerrarModal() {

@@ -722,6 +722,7 @@
                             <option value="SUB 16">SUB 16</option>
                             <option value="SUB 18">SUB 18</option>
                             <option value="SUB 21">SUB 21</option>
+                            <option value="SUB 23">SUB 23</option>
                             <option value="Mayores">Mayores</option>
                         </select>
                     </div>
@@ -787,6 +788,7 @@
                             <option value="SUB 16">SUB 16</option>
                             <option value="SUB 18">SUB 18</option>
                             <option value="SUB 21">SUB 21</option>
+                            <option value="SUB 23">SUB 23</option>
                             <option value="Mayores">Mayores</option>
                         </select>
                     </div>
@@ -912,7 +914,8 @@
             'SUB 16': 1,
             'SUB 18': 2,
             'SUB 21': 3,
-            'Mayores': 4
+            'SUB 23': 4,
+            'Mayores': 5
         };
         
         window.addEventListener('load', async () => {
@@ -1129,7 +1132,7 @@
                 ramaContent.className = 'rama-content collapsed';
                 ramaContent.id = `rama-${rama}`;
                 
-                const categorias = ['SUB 14', 'SUB 16', 'SUB 18', 'SUB 21', 'Mayores'];
+                const categorias = ['SUB 14', 'SUB 16', 'SUB 18', 'SUB 21', 'SUB 23', 'Mayores'];
                 
                 categorias.forEach(categoria => {
                     const jugadoresCategoria = jugadoresPorRama[rama].filter(j => 
